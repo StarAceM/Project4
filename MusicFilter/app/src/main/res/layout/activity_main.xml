@@ -1,44 +1,27 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.DrawerLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer_layout_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="starace.learn.com.musicfilter.MainActivity">
+    android:fitsSystemWindows="true"
+    tools:openDrawer="start"
+    tools:context="martell.com.vice.MainActivity">
 
-   <FrameLayout
-       android:layout_width="match_parent"
-       android:layout_height="45dp"
-       android:layout_alignParentBottom="true"
-       android:layout_marginBottom="10dp">
-       <ProgressBar
-           android:id="@+id/progress_bar_slider"
-           style = "@android:style/Widget.ProgressBar.Horizontal"
-           android:layout_width="match_parent"
-           android:layout_height="20dp"
-           android:layout_gravity="center"
-           android:max="100"
+    <include
+        layout="@layout/app_bar_main"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
 
-           />
+    <fragment
+        android:id="@+id/fragment_navigation_drawer"
+        android:name="starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment"
+        android:layout_width="280dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="start"
+        app:layout="@layout/nagivation_drawer_fragment_main"
+        tools:layout="@layout/nagivation_drawer_fragment_main" />
 
-       <RelativeLayout
-           android:id="@+id/root_slider_view"
-           android:layout_width="match_parent"
-           android:layout_height="match_parent"
-           android:layout_centerInParent="true">
-
-           <Button
-               android:id="@+id/slider_button"
-               android:layout_width="80dp"
-               android:layout_height="40dp"
-               android:background="@drawable/button_shape"
-               android:layout_centerInParent="true"/>
-
-       </RelativeLayout>
-
-
-
-   </FrameLayout>
-
-
-
-</RelativeLayout>
+</android.support.v4.widget.DrawerLayout>

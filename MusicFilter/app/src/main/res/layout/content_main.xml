@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="starace.learn.com.musicfilter.MainActivity">
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="45dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="10dp">
+        <ProgressBar
+            android:id="@+id/progress_bar_slider"
+            style = "@android:style/Widget.ProgressBar.Horizontal"
+            android:layout_width="match_parent"
+            android:layout_height="20dp"
+            android:layout_gravity="center"
+            android:max="100"
+
+            />
+
+        <RelativeLayout
+            android:id="@+id/root_slider_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_centerInParent="true">
+
+            <Button
+                android:id="@+id/slider_button"
+                android:layout_width="80dp"
+                android:layout_height="40dp"
+                android:background="@drawable/button_shape"
+                android:layout_centerInParent="true"/>
+
+        </RelativeLayout>
+
+
+
+    </FrameLayout>
+
+
+
+
+</RelativeLayout>

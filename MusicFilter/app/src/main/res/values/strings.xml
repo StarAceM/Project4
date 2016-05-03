@@ -1,3 +1,21 @@
 <resources>
     <string name="app_name">MusicFilter</string>
+
+    <string name="drawer_open">1</string>
+    <string name="drawer_close">2</string>
+
+    <string-array name="genre">
+        <item>genre</item>
+        <item>divider</item>
+        <item>Pop</item>
+        <item>Rock</item>
+        <item>Country</item>
+        <item>Electronic</item>
+        <item>Blues</item>
+        <item>Classical</item>
+        <item>BlueGrass</item>
+
+    </string-array>
+
+
 </resources>
