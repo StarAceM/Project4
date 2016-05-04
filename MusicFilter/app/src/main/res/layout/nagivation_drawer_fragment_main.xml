@@ -7,22 +7,21 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
+        android:background="@color/colorNavDrawerBackground"
 
         >
 
         <ImageView
             android:id="@+id/nav_app_icon"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginLeft="16dp"
-            android:layout_marginTop="55dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
              />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginLeft="8dp"
-            android:layout_marginTop="64dp"
+            android:layout_marginTop="20dp"
             android:fontFamily="sans-serif-medium"
             android:text="Genre Selections"
             android:textColor="@color/colorPrimaryDark"

@@ -2,12 +2,12 @@ package starace.learn.com.musicfilter.NavigationDrawer;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CompoundButton;
-import android.widget.Switch;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -68,7 +68,7 @@ public class NavDrawerAdapter extends RecyclerView.Adapter{
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
         final NaviagtionEntry item = data.get(position);
-        Log.d(TAG_NAV_ADAPTER,"THIS IS THE ON BINDVIEWHOLDER position" + position );
+        Log.d(TAG_NAV_ADAPTER,"THIS IS THE ON BINDVIEWHOLDER position " + position );
 
 
         if (item instanceof NavigationItem) {
@@ -112,14 +112,17 @@ public class NavDrawerAdapter extends RecyclerView.Adapter{
 
     @Override
     public int getItemViewType(int position) {
-
+        Log.d(TAG_NAV_ADAPTER,"GetitemViewType is called");
         if (data.get(position) instanceof NavigationDivider) {
+            Log.d(TAG_NAV_ADAPTER,"This is an instance of The DIVIDER " + data.get(position).toString());
             return 0;
         }
         if (data.get(position) instanceof NavigationItem) {
+            Log.d(TAG_NAV_ADAPTER,"This is an instance of The ITEM");
             return 1;
         }
         if (data.get(position) instanceof NavigationToggle) {
+            Log.d(TAG_NAV_ADAPTER,"This is an instance of The TOGGLE");
             return 2;
         }
         return -1;
@@ -128,6 +131,7 @@ public class NavDrawerAdapter extends RecyclerView.Adapter{
 
     @Override
     public int getItemCount() {
+        Log.d(TAG_NAV_ADAPTER,"THis is the size of the Entry Array at Count " + data.size());
         return data.size();
     }
 
@@ -158,12 +162,12 @@ public class NavDrawerAdapter extends RecyclerView.Adapter{
 
     class ToggleVH extends RecyclerView.ViewHolder {
         final TextView mTitle;
-        final Switch mSwitch;
+        final SwitchCompat mSwitch;
 
         public ToggleVH(View itemView) {
             super(itemView);
             mTitle = (TextView) itemView.findViewById(R.id.nav_item_title);
-            mSwitch = (Switch) itemView.findViewById(R.id.nav_switch);
+            mSwitch = (SwitchCompat) itemView.findViewById(R.id.nav_switch);
         }
     }
 }

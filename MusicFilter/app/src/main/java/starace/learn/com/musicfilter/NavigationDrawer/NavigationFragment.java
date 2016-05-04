@@ -87,6 +87,15 @@ public class NavigationFragment extends Fragment{
             }
         };
 
+        navDrawerLayout.addDrawerListener(navDrawerToggle);
+        navDrawerLayout.post(new Runnable() {
+            @Override
+            public void run() {
+                Log.d(TAG_NAV_FRAG, "THE NAVDRAWERTOGGLE.SYNCSTATE HAS BEEN CALLED");
+                navDrawerToggle.syncState();
+            }
+        });
+
         navDrawerRecyclerView = (RecyclerView) navFragmentView.findViewById(R.id.nav_list);
         navDrawerAdapter = new NavDrawerAdapter(getActivity(), navDrawerEntryList,booleanArrayList);
         navDrawerRecyclerView.setAdapter(navDrawerAdapter);

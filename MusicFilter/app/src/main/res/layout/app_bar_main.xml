@@ -19,7 +19,6 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:background="?attr/colorPrimary"
-            app:navigationIcon="@drawable/ic_burger"
             android:layout_gravity="center"
             android:backgroundTint="@color/colorPrimaryDark"
             >

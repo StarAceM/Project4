@@ -5,7 +5,43 @@
     android:layout_height="match_parent"
     tools:context="starace.learn.com.musicfilter.MainActivity">
 
+    <fragment
+        android:id="@+id/fragment_song_list"
+        android:name="starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout="@layout/song_list_fragment_main"
+        tools:layout="@layout/song_list_fragment_main" />
+
+    <fragment
+        android:id="@+id/fragment_song_list_played"
+        android:name="starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_gravity="start"
+        android:layout="@layout/song_list_fragment_main"
+        tools:layout="@layout/song_list_fragment_main"
+        android:layout_below="@+id/fragment_song_list"/>
+
+    <include layout="@layout/now_playing"
+        android:id="@+id/now_playing_layout"
+        android:layout_width="match_parent"
+        android:layout_height="100dp"
+        android:layout_below="@+id/fragment_song_list_played"
+
+        />
+
+    <include layout="@layout/player_control"
+        android:id="@+id/player_control_layout"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@+id/now_playing_layout"
+        android:layout_above="@+id/frame_layout_slider"
+        />
+
     <FrameLayout
+        android:id="@+id/frame_layout_slider"
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:layout_alignParentBottom="true"
@@ -24,7 +60,7 @@
             android:id="@+id/root_slider_view"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:layout_centerInParent="true">
+           >
 
             <Button
                 android:id="@+id/slider_button"
@@ -35,11 +71,6 @@
 
         </RelativeLayout>
 
-
-
     </FrameLayout>
-
-
-
 
 </RelativeLayout>

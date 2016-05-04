@@ -5,8 +5,6 @@
     <string name="drawer_close">2</string>
 
     <string-array name="genre">
-        <item>genre</item>
-        <item>divider</item>
         <item>Pop</item>
         <item>Rock</item>
         <item>Country</item>
@@ -14,8 +12,6 @@
         <item>Blues</item>
         <item>Classical</item>
         <item>BlueGrass</item>
-
     </string-array>
-
 
 </resources>

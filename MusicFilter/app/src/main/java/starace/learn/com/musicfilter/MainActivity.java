@@ -164,17 +164,14 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         } else {
             Log.d(TAG_MAIN, "SUPPORT ACTION BAR IS NULL");
         }
-        String[] tabResourceArray = getResources().getStringArray(R.array.genre);
+        String[] navResourceArray = getResources().getStringArray(R.array.genre);
         List<NaviagtionEntry> drawerEntries = new ArrayList<>();
 
         drawerEntries.add(new NavigationDivider());
-        drawerEntries.add(new NavigationToggle(tabResourceArray[2]));
-        drawerEntries.add(new NavigationToggle(tabResourceArray[3]));
-        drawerEntries.add(new NavigationToggle(tabResourceArray[4]));
-        drawerEntries.add(new NavigationToggle(tabResourceArray[5]));
-        drawerEntries.add(new NavigationToggle(tabResourceArray[6]));
-        drawerEntries.add(new NavigationToggle(tabResourceArray[7]));
-        drawerEntries.add(new NavigationToggle(tabResourceArray[8]));
+
+        for (int i =0; i < navResourceArray.length; i++) {
+            drawerEntries.add(new NavigationToggle(navResourceArray[i]));
+        }
 
         NavigationFragment drawerFragment = (NavigationFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_navigation_drawer);
@@ -193,6 +190,10 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     public void setNotificationPreferences(String notificationPreferences) {
         this.notificationPreferences = notificationPreferences;
         Log.i(TAG_MAIN, "setNotificationPreferences: " + notificationPreferences);
+    }
+
+    public void setSongListFragment() {
+
     }
 
     /**
