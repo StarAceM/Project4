@@ -23,6 +23,7 @@ import starace.learn.com.musicfilter.NavigationDrawer.NaviagtionEntry;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationDivider;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationToggle;
+import starace.learn.com.musicfilter.Song.SongListFragment;
 
 public class MainActivity extends AppCompatActivity implements NavigationFragment.NotificationPreferences{
     private static final String TAG_MAIN = "MainActivity";
@@ -45,6 +46,16 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         setSupportActionBar(toolbar);
         toolbar.setTitle("");
 
+        getSharedPreferencesSlider();
+
+        setSongListFragment();
+
+
+
+    }
+
+    private void getSharedPreferencesSlider(){
+
         SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
         String notificationFromSharedPref = sharedPreferences.getString(KEY_SHARED_PREF_NOTIF, "");
         setNavigationDrawer(createBoolArrayList(notificationFromSharedPref));
@@ -54,6 +65,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         setUpSlider(sliderRatio,buttonWidth);
 
     }
+
 
     private void setUpSlider(int sliderRatio,int buttonWidth){
         Button sliderButton = (Button) findViewById(R.id.slider_button);
@@ -136,14 +148,14 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
      * @return
      */
     private ArrayList<Boolean> createBoolArrayList(String notificationPreferences){
-        String[] categories = getResources().getStringArray(R.array.genre);
+        String[] genres = getResources().getStringArray(R.array.genre);
         ArrayList<Boolean> isCheckedArray = new ArrayList<>();
         String[] arrayNotificationPref = notificationPreferences.split(",");
 
-        for (int i = 0; i < categories.length; i++){
+        for (int i = 0; i < genres.length; i++){
             isCheckedArray.add(false);
             for (String curNotification: arrayNotificationPref) {
-                if (categories[i].equals(curNotification)){
+                if (genres[i].equals(curNotification)){
                     isCheckedArray.set(i,true);
                 }
             }
@@ -169,7 +181,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
 
         drawerEntries.add(new NavigationDivider());
 
-        for (int i =0; i < navResourceArray.length; i++) {
+        for (int i =1; i < navResourceArray.length; i++) {
             drawerEntries.add(new NavigationToggle(navResourceArray[i]));
         }
 
@@ -193,6 +205,13 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     }
 
     public void setSongListFragment() {
+        SongListFragment songListFragment = (SongListFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.fragment_song_list);
+        songListFragment.initSongRecyclerView(true);
+
+        SongListFragment songListPlayedFragment = (SongListFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.fragment_song_list_played);
+        songListPlayedFragment.initSongRecyclerView(false);
 
     }
 
@@ -204,7 +223,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         SharedPreferences sharedPreferences = MainActivity.this.getSharedPreferences(KEY_SHAREDPREF_FILE,Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.putString(KEY_SHARED_PREF_NOTIF, notificationPreferences);
-        editor.commit();
+        editor.apply();
 
         super.onDestroy();
     }

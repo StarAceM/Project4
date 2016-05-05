@@ -5,6 +5,7 @@
     <string name="drawer_close">2</string>
 
     <string-array name="genre">
+        <item>Divider</item>
         <item>Pop</item>
         <item>Rock</item>
         <item>Country</item>
