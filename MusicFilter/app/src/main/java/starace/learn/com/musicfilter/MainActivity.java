@@ -1,11 +1,15 @@
 package starace.learn.com.musicfilter;
 
+import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -16,6 +20,11 @@ import android.widget.Button;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
+import com.spotify.sdk.android.authentication.AuthenticationClient;
+import com.spotify.sdk.android.authentication.AuthenticationRequest;
+import com.spotify.sdk.android.authentication.AuthenticationResponse;
+import com.spotify.sdk.android.player.ConnectionStateCallback;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,9 +33,17 @@ import starace.learn.com.musicfilter.NavigationDrawer.NavigationDivider;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationToggle;
 import starace.learn.com.musicfilter.Song.SongListFragment;
+import starace.learn.com.musicfilter.Spotify.Models.Feature;
+import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 
-public class MainActivity extends AppCompatActivity implements NavigationFragment.NotificationPreferences{
+public class MainActivity extends AppCompatActivity implements NavigationFragment.NotificationPreferences,
+        ConnectionStateCallback{
     private static final String TAG_MAIN = "MainActivity";
+
+    public static final String CLIENT_ID = "bb65fc78da534d8f801a5db0aaf6e422";
+    private static final String REDIRECT_URI = "music-filter-app-callback://callback";
+    private static final int REQUEST_CODE_SPOTIFY = 1337;
+
     public static final String KEY_SHARED_PREF_NOTIF = "NotificationPref";
     public static final String KEY_SHAREDPREF_FILE = "MainSharedPref";
     public static final String KEY_SLIDER_RATIO = "SliderRatio";
@@ -35,7 +52,19 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     public static final int widthFixed = 400;
     private static final int height = 150;
     public int width;
+
     private String notificationPreferences;
+
+    private Intent spotifyPlayerIntent;
+    public static final String KEY_SERVICE_TOKEN = "oAuthToken";
+    public boolean isBound;
+    private SpotifyPlayerService playerService;
+    private Button playButton;
+    private Button pauseButton;
+    private Button stopButton;
+    public static float range;
+    public static float tempo;
+    public static List<Feature> features;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +75,79 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         setSupportActionBar(toolbar);
         toolbar.setTitle("");
 
+
+        setUpButtons();
+
+        setButtonOnClickListener(playButton,0);
+        setButtonOnClickListener(pauseButton,1);
+        setButtonOnClickListener(stopButton,2);
+
         getSharedPreferencesSlider();
 
         setSongListFragment();
 
+        setUpSpotifyLogin();
 
+        playButton = (Button) findViewById(R.id.play_button);
+        playButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                playerService.playSong();
+            }
+        });
 
+    }
+
+    private void setUpSpotifyLogin(){
+        SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+        if (sharedPreferences.getString(KEY_SERVICE_TOKEN,"").equals("")){
+
+            AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
+                    AuthenticationResponse.Type.TOKEN,
+                    REDIRECT_URI);
+            builder.setScopes(new String[]{"user-read-private", "streaming"});
+            AuthenticationRequest request = builder.build();
+
+            AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
+
+        } else {
+            bindSpotifyPlayerService(sharedPreferences.getString(KEY_SERVICE_TOKEN,""));
+        }
+
+    }
+
+    private void bindSpotifyPlayerService(String token){
+        Log.d(TAG_MAIN, "Logged in? " + token);
+        spotifyPlayerIntent = new Intent(this,SpotifyPlayerService.class);
+        spotifyPlayerIntent.putExtra(KEY_SERVICE_TOKEN,token);
+        this.bindService(spotifyPlayerIntent, spotifyServiceConnection, Context.BIND_AUTO_CREATE);
+    }
+
+    private void setUpButtons() {
+        playButton = (Button) findViewById(R.id.play_button);
+        pauseButton = (Button) findViewById(R.id.pause_button);
+        stopButton = (Button) findViewById(R.id.stop_button);
+    }
+
+    private void setButtonOnClickListener(Button button,final int type){
+        button.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                switch (type){
+                    case 0:
+                        playerService.playSong();
+                        break;
+                    case 1:
+                        playerService.pauseSong();
+                        break;
+                    case 2:
+                        playerService.stopSong();
+                        break;
+                    default:
+                        break;
+                }
+            }
+        });
     }
 
     private void getSharedPreferencesSlider(){
@@ -62,10 +158,9 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
 
         int sliderRatio = sharedPreferences.getInt(KEY_SLIDER_RATIO, KEY_DEFAULT_INT);
         int buttonWidth = sharedPreferences.getInt(KEY_BUTTON_WIDTH,KEY_DEFAULT_INT);
-        setUpSlider(sliderRatio,buttonWidth);
+        setUpSlider(sliderRatio, buttonWidth);
 
     }
-
 
     private void setUpSlider(int sliderRatio,int buttonWidth){
         Button sliderButton = (Button) findViewById(R.id.slider_button);
@@ -215,6 +310,75 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
 
     }
 
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
+        super.onActivityResult(requestCode, resultCode, intent);
+
+        if (requestCode == REQUEST_CODE_SPOTIFY) {
+            AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
+            if (response.getType() == AuthenticationResponse.Type.TOKEN) {
+
+                SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+                SharedPreferences.Editor editor = sharedPreferences.edit();
+                editor.putString(KEY_SERVICE_TOKEN, response.getAccessToken());
+                editor.apply();
+
+                bindSpotifyPlayerService(response.getAccessToken());
+            }
+        }
+    }
+
+    protected ServiceConnection spotifyServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+
+            SpotifyPlayerService.SpotifyBinder spotifyBinder = (SpotifyPlayerService.SpotifyBinder) service;
+            playerService = spotifyBinder.getService();
+            isBound = true;
+            Log.d(TAG_MAIN,"SERVICE IS CONNECTED");
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG_MAIN,"SERVICE IS DISCONNECTED");
+            isBound = false;
+        }
+    };
+
+    //Authentication call back interface methods
+
+    @Override
+    public void onLoggedIn() {
+
+    }
+
+    @Override
+    public void onLoggedOut() {
+
+    }
+
+    @Override
+    public void onLoginFailed(Throwable throwable) {
+
+    }
+
+    @Override
+    public void onTemporaryError() {
+
+    }
+
+    @Override
+    public void onConnectionMessage(String s) {
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        //ToDo need to save desired info to database here to restore views upon resume
+    }
+
     /**
      * Notification preferences are added to sharedPreferences
      */
@@ -225,8 +389,11 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         editor.putString(KEY_SHARED_PREF_NOTIF, notificationPreferences);
         editor.apply();
 
+        this.unbindService(spotifyServiceConnection);
+
         super.onDestroy();
     }
+
 
 }
 

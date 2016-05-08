@@ -57,7 +57,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
                     Log.d(TAG_SONG_ADAPTER, "This item has been clicked " + position);
                     RecyclerClickEvent clickEvent = new SongListFragment();
                     clickEvent.handleRecyclerClickEvent(curSong.getSong());
-                    
+
                 }
             });
         } else {
