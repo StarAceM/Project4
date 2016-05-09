@@ -33,13 +33,13 @@ import starace.learn.com.musicfilter.NavigationDrawer.NavigationDivider;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationToggle;
 import starace.learn.com.musicfilter.Song.SongListFragment;
-import starace.learn.com.musicfilter.Spotify.Models.Feature;
 import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 
 public class MainActivity extends AppCompatActivity implements NavigationFragment.NotificationPreferences,
         ConnectionStateCallback{
     private static final String TAG_MAIN = "MainActivity";
 
+    public static String token;
     public static final String CLIENT_ID = "bb65fc78da534d8f801a5db0aaf6e422";
     private static final String REDIRECT_URI = "music-filter-app-callback://callback";
     private static final int REQUEST_CODE_SPOTIFY = 1337;
@@ -64,9 +64,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     private Button stopButton;
     public static float range;
     public static float tempo;
-    public static List<Feature> features;
 
-    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -75,26 +73,15 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         setSupportActionBar(toolbar);
         toolbar.setTitle("");
 
+        setUpSpotifyLogin();
+        getSharedPreferencesSlider();
 
         setUpButtons();
-
-        setButtonOnClickListener(playButton,0);
+        setButtonOnClickListener(playButton, 0);
         setButtonOnClickListener(pauseButton,1);
         setButtonOnClickListener(stopButton,2);
 
-        getSharedPreferencesSlider();
-
         setSongListFragment();
-
-        setUpSpotifyLogin();
-
-        playButton = (Button) findViewById(R.id.play_button);
-        playButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                playerService.playSong();
-            }
-        });
 
     }
 
@@ -322,7 +309,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
                 SharedPreferences.Editor editor = sharedPreferences.edit();
                 editor.putString(KEY_SERVICE_TOKEN, response.getAccessToken());
                 editor.apply();
-
+                token = response.getAccessToken();
                 bindSpotifyPlayerService(response.getAccessToken());
             }
         }
@@ -378,6 +365,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         super.onStop();
         //ToDo need to save desired info to database here to restore views upon resume
     }
+
 
     /**
      * Notification preferences are added to sharedPreferences

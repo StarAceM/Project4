@@ -5,7 +5,6 @@ import com.android.internal.util.Predicate;
 import java.util.ArrayList;
 import java.util.Collection;
 
-import starace.learn.com.musicfilter.MainActivity;
 import starace.learn.com.musicfilter.Spotify.Models.Feature;
 import starace.learn.com.musicfilter.Spotify.Models.Item;
 
@@ -15,8 +14,8 @@ import starace.learn.com.musicfilter.Spotify.Models.Item;
 
 public class Filter {
     private static final String currentMarket = "US";
-    private static final float range = MainActivity.range;
-    private static final float tempo = MainActivity.tempo;
+    private static final float range = 100.0f;
+    private static final float tempo = 100.0f;
 
     public static Collection<Item> isPlayable (Collection<Item> items){
 
