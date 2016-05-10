@@ -3,9 +3,11 @@ package starace.learn.com.musicfilter;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Rect;
+import android.support.v4.view.GestureDetectorCompat;
 import android.support.v4.view.MotionEventCompat;
 import android.util.AttributeSet;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
@@ -13,17 +15,21 @@ import android.view.ViewGroup;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
 
+import starace.learn.com.musicfilter.Song.SongListFragment;
+
 /**
  * Created by mstarace on 4/28/16.
  */
-public class SliderButtonListener extends View implements View.OnTouchListener {
+public class SliderButtonListener extends View implements View.OnTouchListener{
     private static final String TAG_LISTENER = "SliderButtonListener";
     private int _xDelta;
     private ProgressBar sliderBar;
     private ViewGroup root;
     private Context context;
     private ScaleGestureDetector scaleGestureDetector;
+    private GestureDetectorCompat doubleTapDetector;
     private View buttonView;
+    private SongListFragment songListFragment;
 
     public SliderButtonListener(Context context, AttributeSet attrs, ViewGroup root, ProgressBar sliderBar) {
         super(context, attrs);
@@ -31,6 +37,7 @@ public class SliderButtonListener extends View implements View.OnTouchListener {
         this.sliderBar = sliderBar;
         this.context = context;
         scaleGestureDetector = new ScaleGestureDetector(context, new ScaleListener());
+        doubleTapDetector = new GestureDetectorCompat(context,new DoubleTapDetector());
     }
 
     public boolean onTouch(View view, MotionEvent event) {
@@ -39,6 +46,7 @@ public class SliderButtonListener extends View implements View.OnTouchListener {
         final int X = (int) event.getRawX();
 
         scaleGestureDetector.onTouchEvent(event);
+        doubleTapDetector.onTouchEvent(event);
 
         if(checkTouchLocation(view,(int)event.getRawX(),(int)event.getRawY())) {
 
@@ -97,6 +105,7 @@ public class SliderButtonListener extends View implements View.OnTouchListener {
             return true;
     }
 
+
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
 
         @Override
@@ -114,6 +123,23 @@ public class SliderButtonListener extends View implements View.OnTouchListener {
 
         }
     }
+
+    private class DoubleTapDetector extends GestureDetector.SimpleOnGestureListener {
+
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return true;
+        }
+
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            //toDo get button size and position start getTrackData method in the Fragment
+            songListFragment.updateAdapterOnDoubleTap();
+            Log.d(TAG_LISTENER,"double tap has occured");
+            return true;
+        }
+    }
+
 
     private void setButtonSize(float spanX){
         int curWidth = buttonView.getWidth();
@@ -148,5 +174,16 @@ public class SliderButtonListener extends View implements View.OnTouchListener {
         outRect.offset(location[0], location[1]);
         return outRect.contains(x, y);
 
+    }
+
+    public interface UpdateAdapterOnDoubleTap{
+       void updateAdapterOnDoubleTap();
+    }
+
+
+
+    public void setFragmentToListener(SongListFragment songListFragment){
+        Log.d(TAG_LISTENER, "The Fragment has been passed to the SliderButtonListener");
+        this.songListFragment = songListFragment;
     }
 }

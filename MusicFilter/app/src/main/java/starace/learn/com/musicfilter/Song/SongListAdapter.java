@@ -9,22 +9,24 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import java.net.URL;
+import com.bumptech.glide.Glide;
+
 import java.util.List;
 
 import starace.learn.com.musicfilter.R;
+import starace.learn.com.musicfilter.Spotify.Models.Item;
 
 /**
  * Created by mstarace on 5/4/16.
  */
 public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHolder> {
     private static final String TAG_SONG_ADAPTER = "SongAdapter";
-    private List<Song> songList;
+    private List<Item> songList;
     private LayoutInflater inflater;
     private boolean isFirst;
     private Context context;
 
-    public SongListAdapter(Context context, List<Song> songList, boolean isFirst) {
+    public SongListAdapter(Context context, List<Item> songList, boolean isFirst) {
         this.songList = songList;
         this.inflater = LayoutInflater.from(context);
         this.isFirst = isFirst;
@@ -41,14 +43,15 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
 
     @Override
     public void onBindViewHolder(final SongListAdapter.ViewHolder holder, final int position) {
-        final Song curSong = songList.get(position);
+        final Item curSong = songList.get(position);
 
         TextView title = holder.songTitle;
-        title.setText(curSong.getTitle());
+        title.setText(curSong.getName());
         ImageView image = holder.songImage;
-        image.setImageResource(curSong.getImage());
+        Glide.with(context).load(curSong.getAlbum().getImages()[0].getImageURL())
+            .into(image);
         TextView detail = holder.songDetail;
-        detail.setText(curSong.getDetail());
+        detail.setText(curSong.getArtists()[0].getName());
 
         if (isFirst) {
             holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -56,7 +59,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
                 public void onClick(View v) {
                     Log.d(TAG_SONG_ADAPTER, "This item has been clicked " + position);
                     RecyclerClickEvent clickEvent = new SongListFragment();
-                    clickEvent.handleRecyclerClickEvent(curSong.getSong());
+                    clickEvent.handleRecyclerClickEvent(curSong.getUri());
 
                 }
             });
@@ -85,8 +88,9 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
     }
 
     public interface RecyclerClickEvent{
-        void handleRecyclerClickEvent(URL song);
+        void handleRecyclerClickEvent(String song);
     }
+
 
 
 }
