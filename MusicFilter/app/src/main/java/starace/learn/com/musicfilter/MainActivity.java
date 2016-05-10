@@ -52,6 +52,8 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     public static final int widthFixed = 400;
     private static final int height = 150;
     public int width;
+    private SongListFragment songListFragment;
+    private SliderButtonListener sliderButtonListener;
 
     private String notificationPreferences;
 
@@ -87,24 +89,26 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
 
     private void setUpSpotifyLogin(){
         SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
-        if (sharedPreferences.getString(KEY_SERVICE_TOKEN,"").equals("")){
+        token = sharedPreferences.getString(KEY_SERVICE_TOKEN,"");
+        if (token.equals("")){
 
             AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
                     AuthenticationResponse.Type.TOKEN,
                     REDIRECT_URI);
             builder.setScopes(new String[]{"user-read-private", "streaming"});
             AuthenticationRequest request = builder.build();
-
             AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
 
         } else {
-            bindSpotifyPlayerService(sharedPreferences.getString(KEY_SERVICE_TOKEN,""));
-        }
 
+            bindSpotifyPlayerService(token);
+
+        }
     }
 
     private void bindSpotifyPlayerService(String token){
         Log.d(TAG_MAIN, "Logged in? " + token);
+        songListFragment = new SongListFragment();
         spotifyPlayerIntent = new Intent(this,SpotifyPlayerService.class);
         spotifyPlayerIntent.putExtra(KEY_SERVICE_TOKEN,token);
         this.bindService(spotifyPlayerIntent, spotifyServiceConnection, Context.BIND_AUTO_CREATE);
@@ -120,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         button.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                switch (type){
+                switch (type) {
                     case 0:
                         playerService.playSong();
                         break;
@@ -178,8 +182,9 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
 
         sliderButton.setLayoutParams(layoutParams);
 
-        SliderButtonListener sliderButtonListener = new SliderButtonListener(this,null,root,sliderBar);
+        sliderButtonListener = new SliderButtonListener(this,null,root,sliderBar);
         sliderButton.setOnTouchListener(sliderButtonListener);
+
     }
 
     public static void setSliderProgress (View button, View root, ProgressBar sliderBar) {
@@ -287,15 +292,19 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     }
 
     public void setSongListFragment() {
-        SongListFragment songListFragment = (SongListFragment) getSupportFragmentManager()
+        songListFragment = (SongListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_song_list);
         songListFragment.initSongRecyclerView(true);
+        sliderButtonListener.setFragmentToListener(songListFragment);
+        songListFragment.setTokenFromMain(token);
 
         SongListFragment songListPlayedFragment = (SongListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_song_list_played);
         songListPlayedFragment.initSongRecyclerView(false);
 
     }
+
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {

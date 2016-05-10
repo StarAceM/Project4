@@ -29,6 +29,7 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
     private ScaleGestureDetector scaleGestureDetector;
     private GestureDetectorCompat doubleTapDetector;
     private View buttonView;
+    private SongListFragment songListFragment;
 
     public SliderButtonListener(Context context, AttributeSet attrs, ViewGroup root, ProgressBar sliderBar) {
         super(context, attrs);
@@ -133,8 +134,7 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         @Override
         public boolean onDoubleTap(MotionEvent e) {
             //toDo get button size and position start getTrackData method in the Fragment
-            UpdateAdapterOnDoubleTap updateAdapter = (UpdateAdapterOnDoubleTap) new SongListFragment();
-            updateAdapter.updateAdapterOnDoubleTap();
+            songListFragment.updateAdapterOnDoubleTap();
             Log.d(TAG_LISTENER,"double tap has occured");
             return true;
         }
@@ -178,5 +178,12 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
     public interface UpdateAdapterOnDoubleTap{
        void updateAdapterOnDoubleTap();
+    }
+
+
+
+    public void setFragmentToListener(SongListFragment songListFragment){
+        Log.d(TAG_LISTENER, "The Fragment has been passed to the SliderButtonListener");
+        this.songListFragment = songListFragment;
     }
 }

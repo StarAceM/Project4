@@ -11,6 +11,7 @@ import android.view.View;
 import android.view.ViewGroup;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -25,6 +26,7 @@ import starace.learn.com.musicfilter.R;
 import starace.learn.com.musicfilter.SliderButtonListener;
 import starace.learn.com.musicfilter.Spotify.Models.Album;
 import starace.learn.com.musicfilter.Spotify.Models.Artist;
+import starace.learn.com.musicfilter.Spotify.Models.AudioFeatures;
 import starace.learn.com.musicfilter.Spotify.Models.Feature;
 import starace.learn.com.musicfilter.Spotify.Models.Image;
 import starace.learn.com.musicfilter.Spotify.Models.Item;
@@ -37,14 +39,18 @@ import starace.learn.com.musicfilter.Spotify.Retrofit.SpotifyRetrofitService;
  */
 public class SongListFragment extends Fragment implements SongListAdapter.RecyclerClickEvent,
         SliderButtonListener.UpdateAdapterOnDoubleTap{
+
     private static final String TAG_SONG_FRAG = "SongListFragment";
     private List<Item> songList;
     private View songFragmentView;
     final SpotifyRetrofitService.GenreSearch genreAPI = SpotifyRetrofitService.createGenre();
-    final SpotifyRetrofitService.FeatureSearch featureAPI = SpotifyRetrofitService.createFeature();
+    SpotifyRetrofitService.FeatureSearch featureAPI;
     List<Item> itemList = new ArrayList<>();
+    List<Item> finalList = new ArrayList<>();
     SongListAdapter songListAdapter;
     RecyclerView songRecyclerView;
+    private String token;
+
 
 
     @Nullable
@@ -105,15 +111,19 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
 
         //want to use a hashMap of values instead of a single entry here
 
+        Log.d(TAG_SONG_FRAG, "THIS IS THE TOKEN PASSED TO RETROFIT SERICE " + this.token);
+        featureAPI = SpotifyRetrofitService.createFeature(this.token);
+
         Observable<RootTrack> genreObservable = genreAPI.tracks("genre:electronic","1","track");
         genreObservable.subscribeOn(Schedulers.newThread())
                 .observeOn(AndroidSchedulers.mainThread())
                 .flatMap(new Func1<RootTrack, Observable<List<Item>>>() {
                     @Override
                     public Observable<List<Item>> call(RootTrack rootTrack) {
+                        Log.d(TAG_SONG_FRAG, "FIRST FLAT MAP OBSERVABLE HAS BEEN CALLED");
                         List<Item> trackItems = new ArrayList<>();
-                        for (Item curItem : rootTrack.getTracks()[0].getItems()) {
-//                      //filter items for us market
+                        for (Item curItem : rootTrack.getTracks().getItems()) {
+                            //filter items for us market
                             if (curItem.getAvailable_markets().contains("US")) {
                                 trackItems.add(curItem);
                             }
@@ -124,9 +134,9 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
                     }
                 })
                         // use ids from list to get BPM
-                .flatMap(new Func1<List<Item>, Observable<List<Feature>>>() {
+                .flatMap(new Func1<List<Item>, Observable<AudioFeatures>>() {
                     @Override
-                    public Observable<List<Feature>> call(List<Item> items) {
+                    public Observable<AudioFeatures> call(List<Item> items) {
                         String strIds = "";
                         for (int i = 0; i < items.size(); i++) {
                             if (i < items.size() - 1) {
@@ -135,26 +145,29 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
                                 strIds = strIds + items.get(i).getId();
                             }
                         }
-                        Observable<List<Feature>> featureObservable = featureAPI.features(strIds)
+
+                        Observable<AudioFeatures> audioFeature = featureAPI.features(strIds)
                                 .subscribeOn(Schedulers.newThread())
                                 .observeOn(AndroidSchedulers.mainThread());
-
-                        return featureObservable;
+                        return audioFeature;
                     }
                 })
-                .flatMap(new Func1<List<Feature>, Observable<List<Item>>>() {
-                    @Override
-                    public Observable<List<Item>> call(List<Feature> features) {
-                        List<Item> filteredItemList = new ArrayList<Item>();
-                        Collection<Feature> filteredFeatureList = Filter.isCorrectTempo(features);
-                        filteredItemList = (List) Filter.filterLists(itemList, filteredFeatureList);
+               .flatMap(new Func1<AudioFeatures, Observable<List<Item>>>() {
+                   @Override
+                   public Observable<List<Item>> call(AudioFeatures audioFeatures) {
+                       List<Feature> featureList = new ArrayList<>(Arrays.asList(audioFeatures.getAudio_features()));
 
-                        return Observable.just(filteredItemList);
-                    }
-                })
+                       List<Item> filteredItemList = new ArrayList<>();
+                       Collection<Feature> filteredFeatureList = Filter.isCorrectTempo(featureList);
+                       filteredItemList = (List) Filter.filterLists(itemList, filteredFeatureList);
+
+                       return Observable.just(filteredItemList);
+                   }
+               })
                 .subscribe(new Subscriber<List<Item>>() {
                     @Override
                     public void onCompleted() {
+
 
                     }
 
@@ -165,17 +178,22 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
 
                     @Override
                     public void onNext(List<Item> items) {
-                        Log.d(TAG_SONG_FRAG,"The subscriber onNext has been called");
                         songList.clear();
                         songList.addAll(items);
                         songListAdapter.notifyDataSetChanged();
                     }
                 });
-
     }
 
     @Override
     public void updateAdapterOnDoubleTap() {
         getTrackData();
     }
+
+    public void setTokenFromMain(String token){
+        Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN " + token);
+        this.token = token;
+        Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN IN THE FRAGMENT " + token);
+    }
+
 }
