@@ -13,9 +13,7 @@ import android.view.ViewGroup;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import rx.Observable;
 import rx.Subscriber;
@@ -93,26 +91,19 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
 
     public void getTrackData(){
 
-        //todo need to make this work for a hashmap
-        //need to setadpater and queue for the player
-        //start player
 
-        //create fake input for retrofit
-        List<String> strGenres = new ArrayList<>();
-        strGenres.add("electronic");
-        strGenres.add("rock");
-        List<String> strOffsets = new ArrayList<>();
-        strOffsets.add("0");
-        strOffsets.add("1");
-
-        Map<String,Integer> genreMap = new HashMap<>();
-        genreMap.put("electronic", 0);
-        genreMap.put("rock", 1);
-
-        //want to use a hashMap of values instead of a single entry here
+        String commaListGenre = "electronic,rock";
 
         Log.d(TAG_SONG_FRAG, "THIS IS THE TOKEN PASSED TO RETROFIT SERICE " + this.token);
         featureAPI = SpotifyRetrofitService.createFeature(this.token);
+
+//        Observable<List<String>> listGenre = createStringObservable(commaListGenre);
+//        listGenre.subscribeOn(Schedulers.newThread())
+//                .observeOn(AndroidSchedulers.mainThread())
+//                .flatMap(new Func1<List<String>, Observable<List<Item>>>() {
+//
+//
+//                });
 
         Observable<RootTrack> genreObservable = genreAPI.tracks("genre:electronic","1","track");
         genreObservable.subscribeOn(Schedulers.newThread())
@@ -167,8 +158,7 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
                 .subscribe(new Subscriber<List<Item>>() {
                     @Override
                     public void onCompleted() {
-
-
+                        
                     }
 
                     @Override
@@ -183,6 +173,11 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
                         songListAdapter.notifyDataSetChanged();
                     }
                 });
+    }
+
+    private Observable<List<String>> createStringObservable(String list){
+       final List<String> genreList = Arrays.asList(list.split(","));
+        return Observable.just(genreList);
     }
 
     @Override
