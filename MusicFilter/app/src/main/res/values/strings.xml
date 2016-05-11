@@ -12,7 +12,14 @@
         <item>Electronic</item>
         <item>Blues</item>
         <item>Classical</item>
-        <item>BlueGrass</item>
+        <item>Motown</item>
+        <item>Salsa</item>
+        <item>World</item>
+        <item>Rap</item>
+        <item>Punk</item>
+        <item>Jazz</item>
+        <item>Ska</item>
+        <item>Latin</item>
     </string-array>
 
 </resources>

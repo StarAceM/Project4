@@ -29,9 +29,6 @@ public class Filter {
         }
     };
 
-    public static Collection<Feature> isCorrectTempo (Collection<Feature> features){
-        return filter(features,isCorrectTempo);
-    }
 
     private static Predicate<Feature> isCorrectTempo = new Predicate<Feature>() {
         @Override

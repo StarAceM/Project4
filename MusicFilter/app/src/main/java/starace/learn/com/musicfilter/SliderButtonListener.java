@@ -30,6 +30,8 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
     private GestureDetectorCompat doubleTapDetector;
     private View buttonView;
     private SongListFragment songListFragment;
+    private int width;
+    private int curLeftMargin;
 
     public SliderButtonListener(Context context, AttributeSet attrs, ViewGroup root, ProgressBar sliderBar) {
         super(context, attrs);
@@ -61,15 +63,18 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
                 case MotionEvent.ACTION_UP:
                     RelativeLayout.LayoutParams endParams = (RelativeLayout.LayoutParams) view.getLayoutParams();
+                    this.width = view.getWidth();
+                    this.curLeftMargin = endParams.leftMargin;
 
                     SharedPreferences sharedPreferences = context
                             .getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
                     sharedPreferences.edit().putInt(MainActivity.KEY_SLIDER_RATIO, sliderBar.getProgress())
-                            .putInt(MainActivity.KEY_BUTTON_WIDTH, view.getWidth())
+                            .putInt(MainActivity.KEY_BUTTON_WIDTH, width)
                             .apply();
+
                     Log.d(TAG_LISTENER, "THis is the progress bar position " + sliderBar.getProgress());
-                    Log.d(TAG_LISTENER, "This is position of left margin " + endParams.leftMargin);
-                    Log.d(TAG_LISTENER, "THIS IS THE BUTTON WIDTH " + view.getWidth());
+                    Log.d(TAG_LISTENER, "This is position of left margin " + curLeftMargin);
+                    Log.d(TAG_LISTENER, "THIS IS THE BUTTON WIDTH " + width);
                     view.setBackground(getResources().getDrawable(R.drawable.button_shape, null));
 
                     break;
@@ -133,13 +138,11 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
         @Override
         public boolean onDoubleTap(MotionEvent e) {
-            //toDo get button size and position start getTrackData method in the Fragment
-            songListFragment.updateAdapterOnDoubleTap();
+            songListFragment.updateAdapterOnDoubleTap(calcTempo(),calcRange());
             Log.d(TAG_LISTENER,"double tap has occured");
             return true;
         }
     }
-
 
     private void setButtonSize(float spanX){
         int curWidth = buttonView.getWidth();
@@ -177,13 +180,27 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
     }
 
     public interface UpdateAdapterOnDoubleTap{
-       void updateAdapterOnDoubleTap();
+       void updateAdapterOnDoubleTap(float tempo, float range);
     }
-
-
 
     public void setFragmentToListener(SongListFragment songListFragment){
         Log.d(TAG_LISTENER, "The Fragment has been passed to the SliderButtonListener");
         this.songListFragment = songListFragment;
+    }
+
+    private float calcTempo(){
+        float flWidth = this.width;
+        float flLeftMargin = this.curLeftMargin;
+
+        float position = flLeftMargin + (flWidth/2);
+
+        return 60.0f + ((position - 200.0f)/4.86f);
+    }
+
+    private float calcRange(){
+        float flWidth = this.width;
+
+        return 5.0f +((flWidth - 400.0f)/5.44f);
+
     }
 }
