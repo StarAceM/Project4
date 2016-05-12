@@ -17,9 +17,13 @@ import android.view.Display;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.RelativeLayout;
+import android.widget.TextView;
+import android.widget.Toast;
 
+import com.bumptech.glide.Glide;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
@@ -32,11 +36,13 @@ import starace.learn.com.musicfilter.NavigationDrawer.NaviagtionEntry;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationDivider;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationToggle;
+import starace.learn.com.musicfilter.Song.SongListAdapter;
 import starace.learn.com.musicfilter.Song.SongListFragment;
+import starace.learn.com.musicfilter.Spotify.Models.Item;
 import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 
-public class MainActivity extends AppCompatActivity implements NavigationFragment.NotificationPreferences,
-        ConnectionStateCallback{
+public class MainActivity extends AppCompatActivity implements SongListAdapter.RecyclerClickEvent, NavigationFragment.NotificationPreferences,
+        ConnectionStateCallback, SongListFragment.SetSongItemsToMain{
     private static final String TAG_MAIN = "MainActivity";
 
     public static String token;
@@ -61,11 +67,14 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     public static final String KEY_SERVICE_TOKEN = "oAuthToken";
     public boolean isBound;
     private SpotifyPlayerService playerService;
+    private List<Item> itemList;
     private Button playButton;
     private Button pauseButton;
     private Button stopButton;
-    public static float range;
-    public static float tempo;
+    private ImageView nowPlayingImage;
+    private TextView nowPlayingTitle;
+    private TextView nowPlayingArtist;
+
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -80,8 +89,10 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
 
         setUpButtons();
         setButtonOnClickListener(playButton, 0);
-        setButtonOnClickListener(pauseButton,1);
+        setButtonOnClickListener(pauseButton, 1);
         setButtonOnClickListener(stopButton,2);
+
+        setUpNowPlayingViews();
 
         setSongListFragment();
 
@@ -118,6 +129,12 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         playButton = (Button) findViewById(R.id.play_button);
         pauseButton = (Button) findViewById(R.id.pause_button);
         stopButton = (Button) findViewById(R.id.stop_button);
+    }
+
+    private void setUpNowPlayingViews() {
+        nowPlayingImage = (ImageView) findViewById(R.id.song_image);
+        nowPlayingTitle = (TextView) findViewById(R.id.song_title);
+        nowPlayingArtist = (TextView) findViewById(R.id.song_detail);
     }
 
     private void setButtonOnClickListener(Button button,final int type){
@@ -288,6 +305,11 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
     @Override
     public void setNotificationPreferences(String notificationPreferences) {
         this.notificationPreferences = notificationPreferences;
+        SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+        sharedPreferences.edit()
+                .putString(KEY_SHARED_PREF_NOTIF,notificationPreferences)
+                .apply();
+
         Log.i(TAG_MAIN, "setNotificationPreferences: " + notificationPreferences);
     }
 
@@ -303,8 +325,6 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         songListPlayedFragment.initSongRecyclerView(false);
 
     }
-
-
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
@@ -375,6 +395,36 @@ public class MainActivity extends AppCompatActivity implements NavigationFragmen
         //ToDo need to save desired info to database here to restore views upon resume
     }
 
+    @Override
+    public void passSongItemsToMain(List<Item> listItem) {
+        itemList = listItem;
+        Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
+        if (listItem.size() > 0) {
+            playerService.setQueue(listItem);
+            updateNowPlayingViews(0);
+        } else {
+            Toast.makeText(this,"Your Filter Didn't Any Results. Adjust Your Filter and Try Again",Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void handleRecyclerClickEvent(int pos) {
+        playerService.jumpTheQueue(pos);
+        updateNowPlayingViews(pos);
+        Log.d(TAG_MAIN, "jumpTheQueue has been called");
+        //set view here
+    }
+
+    private void updateNowPlayingViews(int pos){
+        if (itemList.size() > pos) {
+            nowPlayingArtist.setText(itemList.get(pos).getArtists()[0].getName());
+            Log.d(TAG_MAIN, "This is the artist name " + itemList.get(pos).getArtists()[0].getName());
+            nowPlayingTitle.setText(itemList.get(pos).getName());
+            Log.d(TAG_MAIN, "This is the image url " + itemList.get(pos).getAlbum().getImages()[0].getImageURL());
+            Glide.with(this).load(itemList.get(pos).getAlbum().getImages()[0].getImageURL())
+                    .into(nowPlayingImage);
+        }
+    }
 
     /**
      * Notification preferences are added to sharedPreferences

@@ -14,7 +14,11 @@ import com.spotify.sdk.android.player.PlayerNotificationCallback;
 import com.spotify.sdk.android.player.PlayerState;
 import com.spotify.sdk.android.player.Spotify;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import starace.learn.com.musicfilter.MainActivity;
+import starace.learn.com.musicfilter.Spotify.Models.Item;
 
 /**
  * Created by mstarace on 5/5/16.
@@ -24,11 +28,15 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     private final IBinder spotifyBinder = new SpotifyBinder();
     private String token;
     private Player spotifyPlayer;
+    private List<String> playList;
+    private List<String> curPlayList;
 
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
         token = intent.getExtras().getString(MainActivity.KEY_SERVICE_TOKEN);
+        playList = new ArrayList<>();
+        curPlayList = new ArrayList<>();
         Log.d(TAG_PLAYER_SERVICE, "This is the token in the Player Service " + token);
 
         Config playerConfig = new Config(this, token, MainActivity.CLIENT_ID);
@@ -76,7 +84,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     }
 
     public void playSong (){
-        spotifyPlayer.play("spotify:track:2TpxZ7JUBn3uw46aR7qd6V");
+        spotifyPlayer.resume();
     }
 
     public void pauseSong(){
@@ -86,5 +94,25 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     public void stopSong(){
         spotifyPlayer.shutdown();
     }
+
+    public void setQueue(List<Item> items){
+        for(Item curItem:items) {
+            playList.add(curItem.getUri());
+        }
+        curPlayList.addAll(playList);
+        Log.d(TAG_PLAYER_SERVICE, "This is the size of the curPlayList " + curPlayList.size());
+        spotifyPlayer.play(curPlayList);
+    }
+
+    public void jumpTheQueue(int pos){
+        Log.d(TAG_PLAYER_SERVICE, "JumptheQueue Has been called");
+        Log.d(TAG_PLAYER_SERVICE, "Size of playlist at Jump " + playList.size());
+        curPlayList.clear();
+        curPlayList.addAll(playList.subList(pos, playList.size()));
+        spotifyPlayer.skipToNext();
+        spotifyPlayer.play(curPlayList);
+
+    }
+
 
 }

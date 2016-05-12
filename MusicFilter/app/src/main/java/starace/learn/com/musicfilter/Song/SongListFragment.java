@@ -39,7 +39,7 @@ import starace.learn.com.musicfilter.Spotify.Retrofit.SpotifyRetrofitService;
 /**
  * Created by mstarace on 5/3/16.
  */
-public class SongListFragment extends Fragment implements SongListAdapter.RecyclerClickEvent,
+public class SongListFragment extends Fragment implements
         SliderButtonListener.UpdateAdapterOnDoubleTap {
 
     private static final String TAG_SONG_FRAG = "SongListFragment";
@@ -50,11 +50,18 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
     SongListAdapter songListAdapter;
     RecyclerView songRecyclerView;
     private String token;
+    SongListAdapter.RecyclerClickEvent recyclerClickEvent;
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         songFragmentView = inflater.inflate(R.layout.song_list_fragment_main, container, false);
+        recyclerClickEvent = new SongListAdapter.RecyclerClickEvent() {
+            @Override
+            public void handleRecyclerClickEvent(int pos) {
+
+            }
+        };
         return songFragmentView;
     }
 
@@ -82,11 +89,6 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
     }
 
 
-    @Override
-    public void handleRecyclerClickEvent(String song) {
-        Log.d(TAG_SONG_FRAG, "This is a recycler click event in the SongFragment " + song);
-    }
-
     public void getTrackData(final Float tempo, final Float range) {
         Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
         String commaListGenre = setGenreString();
@@ -95,8 +97,7 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
         featureAPI = SpotifyRetrofitService.createFeature(this.token);
 
         Observable<List<Item>> listGenre2 =
-                createStringObservable(commaListGenre).observeOn(Schedulers.newThread())
-            .subscribeOn(AndroidSchedulers.mainThread())
+                createStringObservable(commaListGenre).subscribeOn(Schedulers.newThread())
             .flatMap(new Func1<List<String>, Observable<List<Item>>>() {
                 @Override
                 public Observable<List<Item>> call(List<String> listGenre) {
@@ -131,53 +132,76 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
             @Override
             public Observable<List<Item>> call(final List<Item> items) {
                 Log.d(TAG_SONG_FRAG, "Audio Features Called!");
+                Log.d(TAG_SONG_FRAG, "Size of Item list before feature call " + items.size());
+                //handle over 100 items
+                List<String> totalItemIdList = new ArrayList<>();
+                int itemCounter = 0;
+                int listCounter;
+                while (itemCounter < items.size()) {
+                    listCounter = 0;
+                    List<String> strItems = new ArrayList<>();
+                    while (listCounter < 100 && itemCounter < items.size()){
 
-                List<String> strItems = new ArrayList<>();
-                for (int i = 0; i < items.size(); i++) {
-                    strItems.add(items.get(i).getId());
+                        strItems.add(items.get(itemCounter).getId());
+                        itemCounter +=1;
+                        listCounter +=1;
+                    }
+                    totalItemIdList.add(TextUtils.join(",",strItems));
                 }
-                String strIds = TextUtils.join(",", strItems);
+                Log.d(TAG_SONG_FRAG, "The size of the string list before feature call " + totalItemIdList.size());
 
-                
-                return featureAPI.features(strIds)
-                        .subscribeOn(Schedulers.newThread())
-                        .observeOn(AndroidSchedulers.mainThread())
-                        .flatMap(new Func1<AudioFeatures, Observable<Feature>>() {
-                            @Override
-                            public Observable<Feature> call(AudioFeatures audioFeatures) {
-                                return Observable.from(audioFeatures.getAudio_features());
-                            }
-                        }).filter(new Func1<Feature, Boolean>() {
-                            @Override
-                            public Boolean call(Feature feature) {
-                                return feature.getTempo() >= (tempo - range) && feature.getTempo() <= (tempo + range);
-                            }
-                        }).toList()
-                        .map(new Func1<List<Feature>, List<Item>>() {
-                            @Override
-                            public List<Item> call(List<Feature> features) {
-                                return (List<Item>) Filter.filterLists(items, features);
-                            }
-                        });
+                List<Observable<Item>> zipObservableItemList = new ArrayList<>();
+
+                for (String strIds : totalItemIdList) {
+
+                    Observable<AudioFeatures> rootFeatures = featureAPI.features(strIds);
+                    Log.d(TAG_SONG_FRAG, "AudioFeatures has been created");
+                    zipObservableItemList.add(rootFeatures.flatMap(new Func1<AudioFeatures,
+                            Observable<Feature>>() {
+                        @Override
+                        public Observable<Feature> call(AudioFeatures audioFeatures) {
+                            return Observable.from(audioFeatures.getAudio_features());
+                        }
+                    }).filter(new Func1<Feature, Boolean>() {
+                        @Override
+                        public Boolean call(Feature feature) {
+                            return feature.getTempo() >= (tempo - range) && feature.getTempo() <= (tempo + range);
+                        }
+                    }).toList()
+                            .flatMap(new Func1<List<Feature>, Observable<Item>>() {
+                                @Override
+                                public Observable<Item> call(List<Feature> features) {
+                                    return Observable.from((Filter.filterLists(items, features)));
+                                }
+                            }));
+                }
+
+                return Observable.merge(zipObservableItemList).toList();
+
             }
         })
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(new Subscriber<List<Item>>() {
                     @Override
                     public void onCompleted() {
-
+                        SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
+                        setSongItemsToMain.passSongItemsToMain(songList);
+                        songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
+                        Log.d(TAG_SONG_FRAG, "Oncmpleted had been called END");
                     }
 
                     @Override
                     public void onError(Throwable e) {
+                        e.printStackTrace();
 
                     }
 
                     @Override
                     public void onNext(List<Item> items) {
+                        Log.d(TAG_SONG_FRAG, "OnNext had been called");
                         songList.clear();
                         Collections.shuffle(items);
                         songList.addAll(items);
-                        songListAdapter.notifyDataSetChanged();
 
                     }
                 });
@@ -211,7 +235,7 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
 
         String rawGenre = sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF,"");
 
-        if (rawGenre.equals("")) {
+        if (!rawGenre.equals("")) {
             List<String> rawGenreList = Arrays.asList(rawGenre.split(","));
             for (String curGenre: rawGenreList){
                 if (curGenre.contains(" ")){
@@ -226,4 +250,17 @@ public class SongListFragment extends Fragment implements SongListAdapter.Recycl
         return TextUtils.join(",",cleanGenreList);
     }
 
+    public interface SetSongItemsToMain{
+        void passSongItemsToMain(List<Item> listItem);
+    }
+//
+//    public interface SetSongOnClick{
+//        void setSongOnClick(int pos);
+//    }
+
+//    private void startPlayerFromPos(int pos){
+//        SetSongOnClick setSongOnClick;
+//        setSongOnClick = (SetSongOnClick)getActivity();
+//        setSongOnClick.setSongOnClick(pos);
+//    }
 }

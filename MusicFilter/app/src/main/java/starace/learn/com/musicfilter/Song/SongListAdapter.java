@@ -25,12 +25,15 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
     private LayoutInflater inflater;
     private boolean isFirst;
     private Context context;
+    RecyclerClickEvent clickEvent;
+
 
     public SongListAdapter(Context context, List<Item> songList, boolean isFirst) {
         this.songList = songList;
         this.inflater = LayoutInflater.from(context);
         this.isFirst = isFirst;
         this.context = context;
+        this.clickEvent = (RecyclerClickEvent) context;
 
     }
 
@@ -58,8 +61,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
                 @Override
                 public void onClick(View v) {
                     Log.d(TAG_SONG_ADAPTER, "This item has been clicked " + position);
-                    RecyclerClickEvent clickEvent = new SongListFragment();
-                    clickEvent.handleRecyclerClickEvent(curSong.getUri());
+                    clickEvent.handleRecyclerClickEvent(position);
 
                 }
             });
@@ -88,7 +90,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
     }
 
     public interface RecyclerClickEvent{
-        void handleRecyclerClickEvent(String song);
+        void handleRecyclerClickEvent(int pos);
     }
 
 
