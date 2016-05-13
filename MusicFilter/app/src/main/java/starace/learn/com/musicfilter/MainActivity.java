@@ -443,13 +443,16 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     private void updateNowPlayingViews(int pos){
-        if (itemList.size() > pos) {
-            nowPlayingArtist.setText(itemList.get(pos).getArtists()[0].getName());
-            Log.d(TAG_MAIN, "This is the artist name " + itemList.get(pos).getArtists()[0].getName());
-            nowPlayingTitle.setText(itemList.get(pos).getName());
-            Log.d(TAG_MAIN, "This is the image url " + itemList.get(pos).getAlbum().getImages()[0].getImageURL());
-            Glide.with(this).load(itemList.get(pos).getAlbum().getImages()[0].getImageURL())
-                    .into(nowPlayingImage);
+        if (itemList != null) {
+            if (itemList.size() > pos && !itemList.get(0).getId().equals("isFake")) {
+                nowPlayingArtist.setText(itemList.get(pos).getArtists()[0].getName());
+                Log.d(TAG_MAIN, "This is the artist name " + itemList.get(pos).getArtists()[0].getName());
+                nowPlayingTitle.setText(itemList.get(pos).getName());
+                Log.d(TAG_MAIN, "This is the image url " + itemList.get(pos).getAlbum().getImages()[0].getImageURL());
+                Glide.with(this).load(itemList.get(pos).getAlbum().getImages()[0].getImageURL())
+                        .into(nowPlayingImage);
+            }
+            Log.d(TAG_MAIN, "updateNowPlayingViews is finished");
         }
     }
 

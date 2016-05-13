@@ -70,7 +70,7 @@ public class SongListFragment extends Fragment implements
         Image fakeImage = new Image("https://i.scdn.co/image/97d34ddb81c34eca1d033fa423381d0d9bd2a03b", "width");
         Artist fakeArtist = new Artist("Fake Artist Name");
         Item fakeItem = new Item(new Album(new Image[]{fakeImage}, "fake album name"), new Artist[]{fakeArtist},
-                new String[]{"US"}, "id", "Fake Song Name", "fake uri");
+                new String[]{"US"}, "isFake", "Fake Song Name", "fake uri");
         songList = new ArrayList<>();
         for (int i = 0; i < 10; i++) {
             songList.add(fakeItem);
@@ -184,9 +184,14 @@ public class SongListFragment extends Fragment implements
                 .subscribe(new Subscriber<List<Item>>() {
                     @Override
                     public void onCompleted() {
+                        songRecyclerView.smoothScrollToPosition(0);
                         SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
                         setSongItemsToMain.passSongItemsToMain(songList);
-                        songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
+                        if (songList.size()>0) {
+                            songListAdapter.notifyDataSetChanged();
+                            songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
+                            songRecyclerView.invalidate();
+                        }
                         Log.d(TAG_SONG_FRAG, "Oncmpleted had been called END");
                     }
 
@@ -218,7 +223,6 @@ public class SongListFragment extends Fragment implements
     }
 
     public void setTokenFromMain(String token) {
-        Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN " + token);
         this.token = token;
         Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN IN THE FRAGMENT " + token);
     }

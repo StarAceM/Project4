@@ -30,6 +30,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     private Player spotifyPlayer;
     private List<String> playList;
     private List<String> curPlayList;
+    private boolean isSetQueue;
 
     @Nullable
     @Override
@@ -37,6 +38,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         token = intent.getExtras().getString(MainActivity.KEY_SERVICE_TOKEN);
         playList = new ArrayList<>();
         curPlayList = new ArrayList<>();
+        isSetQueue = false;
         Log.d(TAG_PLAYER_SERVICE, "This is the token in the Player Service " + token);
 
         Config playerConfig = new Config(this, token, MainActivity.CLIENT_ID);
@@ -109,16 +111,21 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
             spotifyPlayer.skipToNext();
         }
         spotifyPlayer.play(curPlayList);
+        isSetQueue = true;
     }
 
     public void jumpTheQueue(int pos){
         Log.d(TAG_PLAYER_SERVICE, "JumptheQueue Has been called");
         Log.d(TAG_PLAYER_SERVICE, "Size of playlist at Jump " + playList.size());
-        curPlayList.clear();
-        curPlayList.addAll(playList.subList(pos, playList.size()));
-        spotifyPlayer.skipToNext();
-        spotifyPlayer.play(curPlayList);
-
+        //check to make sure the queue has already been set
+        if (isSetQueue) {
+            curPlayList.clear();
+            curPlayList.addAll(playList.subList(pos, playList.size()));
+            spotifyPlayer.skipToNext();
+            spotifyPlayer.play(curPlayList);
+            Log.d(TAG_PLAYER_SERVICE,"issetqueue is " + isSetQueue);
+        }
+        Log.d(TAG_PLAYER_SERVICE, "JumpTheQue has finished");
     }
 
 }
