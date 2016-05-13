@@ -98,35 +98,35 @@ public class SongListFragment extends Fragment implements
 
         Observable<List<Item>> listGenre2 =
                 createStringObservable(commaListGenre).subscribeOn(Schedulers.newThread())
-            .flatMap(new Func1<List<String>, Observable<List<Item>>>() {
-                @Override
-                public Observable<List<Item>> call(List<String> listGenre) {
-
-                    List<Observable<Item>> zipObservableList = new ArrayList<>();
-
-
-                    for (String curGenre : listGenre) {
-                        int offset = randomOffsetInt();
-                        Log.d(TAG_SONG_FRAG, "THE RANDOM OFFSET IS " + offset);
-                        Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
-                                String.valueOf(offset), "track");
-
-                        zipObservableList.add(genreObservable.flatMap(new Func1<RootTrack, Observable<Item>>() {
+                        .flatMap(new Func1<List<String>, Observable<List<Item>>>() {
                             @Override
-                            public Observable<Item> call(RootTrack rootTrack) {
+                            public Observable<List<Item>> call(List<String> listGenre) {
 
-                                return Observable.from(rootTrack.getTracks().getItems());
+                                List<Observable<Item>> zipObservableList = new ArrayList<>();
+
+
+                                for (String curGenre : listGenre) {
+                                    int offset = randomOffsetInt();
+                                    Log.d(TAG_SONG_FRAG, "THE RANDOM OFFSET IS " + offset);
+                                    Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
+                                            String.valueOf(offset), "track");
+
+                                    zipObservableList.add(genreObservable.flatMap(new Func1<RootTrack, Observable<Item>>() {
+                                        @Override
+                                        public Observable<Item> call(RootTrack rootTrack) {
+
+                                            return Observable.from(rootTrack.getTracks().getItems());
+                                        }
+                                    }).filter(new Func1<Item, Boolean>() {
+                                        @Override
+                                        public Boolean call(Item item) {
+                                            return item.getAvailable_markets().contains("US");
+                                        }
+                                    }));
+                                }
+                                return Observable.merge(zipObservableList).toList();
                             }
-                        }).filter(new Func1<Item, Boolean>() {
-                            @Override
-                            public Boolean call(Item item) {
-                                return item.getAvailable_markets().contains("US");
-                            }
-                        }));
-                    }
-                    return Observable.merge(zipObservableList).toList();
-                }
-            });
+                        });
         // use ids from list to get BPM
         listGenre2.flatMap(new Func1<List<Item>, Observable<List<Item>>>() {
             @Override
@@ -140,13 +140,13 @@ public class SongListFragment extends Fragment implements
                 while (itemCounter < items.size()) {
                     listCounter = 0;
                     List<String> strItems = new ArrayList<>();
-                    while (listCounter < 100 && itemCounter < items.size()){
+                    while (listCounter < 100 && itemCounter < items.size()) {
 
                         strItems.add(items.get(itemCounter).getId());
-                        itemCounter +=1;
-                        listCounter +=1;
+                        itemCounter += 1;
+                        listCounter += 1;
                     }
-                    totalItemIdList.add(TextUtils.join(",",strItems));
+                    totalItemIdList.add(TextUtils.join(",", strItems));
                 }
                 Log.d(TAG_SONG_FRAG, "The size of the string list before feature call " + totalItemIdList.size());
 
@@ -223,22 +223,22 @@ public class SongListFragment extends Fragment implements
         Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN IN THE FRAGMENT " + token);
     }
 
-    private int randomOffsetInt(){
-         return (int) (Math.random() * 100.0);
+    private int randomOffsetInt() {
+        return (int) (Math.random() * 100.0);
     }
 
-    private String setGenreString(){
+    private String setGenreString() {
         List<String> cleanGenreList = new ArrayList<>();
 
         SharedPreferences sharedPreferences = getActivity().
                 getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
 
-        String rawGenre = sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF,"");
+        String rawGenre = sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF, "");
 
         if (!rawGenre.equals("")) {
             List<String> rawGenreList = Arrays.asList(rawGenre.split(","));
-            for (String curGenre: rawGenreList){
-                if (curGenre.contains(" ")){
+            for (String curGenre : rawGenreList) {
+                if (curGenre.contains(" ")) {
                     cleanGenreList.add("\"" + curGenre + "\"");
                 } else {
                     cleanGenreList.add(curGenre);
@@ -247,20 +247,10 @@ public class SongListFragment extends Fragment implements
 
         }
 
-        return TextUtils.join(",",cleanGenreList);
+        return TextUtils.join(",", cleanGenreList);
     }
 
-    public interface SetSongItemsToMain{
+    public interface SetSongItemsToMain {
         void passSongItemsToMain(List<Item> listItem);
     }
-//
-//    public interface SetSongOnClick{
-//        void setSongOnClick(int pos);
-//    }
-
-//    private void startPlayerFromPos(int pos){
-//        SetSongOnClick setSongOnClick;
-//        setSongOnClick = (SetSongOnClick)getActivity();
-//        setSongOnClick.setSongOnClick(pos);
-//    }
 }

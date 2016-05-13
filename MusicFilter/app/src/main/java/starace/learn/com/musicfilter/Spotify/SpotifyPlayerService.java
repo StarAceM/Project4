@@ -91,16 +91,23 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         spotifyPlayer.pause();
     }
 
-    public void stopSong(){
-        spotifyPlayer.shutdown();
+    public void nextSong(){
+        spotifyPlayer.skipToNext();
     }
 
-    public void setQueue(List<Item> items){
+    public void setQueue(List<Item> items, Boolean isFirst){
+        Log.d(TAG_PLAYER_SERVICE, "setQue has been called");
+        playList.clear();
+        curPlayList.clear();
         for(Item curItem:items) {
             playList.add(curItem.getUri());
         }
         curPlayList.addAll(playList);
         Log.d(TAG_PLAYER_SERVICE, "This is the size of the curPlayList " + curPlayList.size());
+        if(!isFirst){
+            Log.d(TAG_PLAYER_SERVICE,"this is the boolena isfirst " + isFirst.toString());
+            spotifyPlayer.skipToNext();
+        }
         spotifyPlayer.play(curPlayList);
     }
 
@@ -113,6 +120,5 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         spotifyPlayer.play(curPlayList);
 
     }
-
 
 }

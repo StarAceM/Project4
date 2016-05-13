@@ -44,6 +44,10 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
     public boolean onTouch(View view, MotionEvent event) {
         buttonView = view;
+        width = buttonView.getWidth();
+        RelativeLayout.LayoutParams startParams = (RelativeLayout.LayoutParams) view.getLayoutParams();
+        curLeftMargin = startParams.leftMargin;
+        setBPMValueForMain();
         final int action = MotionEventCompat.getActionMasked(event);
         final int X = (int) event.getRawX();
 
@@ -55,6 +59,7 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
             switch (action) {
                 case MotionEvent.ACTION_DOWN:
                     RelativeLayout.LayoutParams lParams = (RelativeLayout.LayoutParams) view.getLayoutParams();
+
                     _xDelta = X - lParams.leftMargin;
 
                     view.setBackground(getResources().getDrawable(R.drawable.button_border, null));
@@ -96,10 +101,10 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
                     } else if (X - _xDelta <= 0) {
                         layoutParams.leftMargin = 0;
                     }
-
+                    curLeftMargin = layoutParams.leftMargin;
                     view.setLayoutParams(layoutParams);
                     MainActivity.setSliderProgress(view, root, sliderBar);
-
+                    setBPMValueForMain();
                     break;
             }
 
@@ -138,8 +143,8 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
         @Override
         public boolean onDoubleTap(MotionEvent e) {
-            songListFragment.updateAdapterOnDoubleTap(calcTempo(),calcRange());
-            Log.d(TAG_LISTENER,"double tap has occured");
+            songListFragment.updateAdapterOnDoubleTap(calcTempo(), calcRange());
+            Log.d(TAG_LISTENER, "double tap has occured");
             return true;
         }
     }
@@ -161,9 +166,11 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         } else {
             layoutParams.width = newWidth;
         }
-
+        this.width = layoutParams.width;
         Log.d(TAG_LISTENER, "This is the width of the button " + layoutParams.width);
         MainActivity.setSliderProgress(buttonView, root, sliderBar);
+        SetBPMRange setBPMRange = (SetBPMRange) context;
+        setBPMRange.setRange(calcRange());
         buttonView.setLayoutParams(layoutParams);
 
     }
@@ -203,4 +210,18 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         return 5.0f +((flWidth - 400.0f)/5.44f);
 
     }
+
+    public interface SetBPMRange{
+        void setRange(float range);
+    }
+
+    public interface SetBPMValue{
+        void setBPMValue(float value);
+    }
+
+    public void setBPMValueForMain() {
+        SetBPMValue setBPMValue = (SetBPMValue) context;
+        setBPMValue.setBPMValue(calcTempo());
+    }
+
 }

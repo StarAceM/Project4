@@ -42,7 +42,8 @@ import starace.learn.com.musicfilter.Spotify.Models.Item;
 import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 
 public class MainActivity extends AppCompatActivity implements SongListAdapter.RecyclerClickEvent, NavigationFragment.NotificationPreferences,
-        ConnectionStateCallback, SongListFragment.SetSongItemsToMain{
+        ConnectionStateCallback, SongListFragment.SetSongItemsToMain, SliderButtonListener.SetBPMRange,
+        SliderButtonListener.SetBPMValue{
     private static final String TAG_MAIN = "MainActivity";
 
     public static String token;
@@ -58,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     public static final int widthFixed = 400;
     private static final int height = 150;
     public int width;
+    private int leftMargin;
     private SongListFragment songListFragment;
     private SliderButtonListener sliderButtonListener;
 
@@ -74,11 +76,14 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private ImageView nowPlayingImage;
     private TextView nowPlayingTitle;
     private TextView nowPlayingArtist;
-
+    private TextView bpmRange;
+    private TextView bpmValue;
+    private Boolean isFrist;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        isFrist = true;
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
@@ -92,6 +97,8 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         setButtonOnClickListener(pauseButton, 1);
         setButtonOnClickListener(stopButton,2);
 
+        setBPMViews();
+
         setUpNowPlayingViews();
 
         setSongListFragment();
@@ -99,9 +106,6 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     private void setUpSpotifyLogin(){
-        SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
-        token = sharedPreferences.getString(KEY_SERVICE_TOKEN,"");
-        if (token.equals("")){
 
             AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
                     AuthenticationResponse.Type.TOKEN,
@@ -110,11 +114,6 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
             AuthenticationRequest request = builder.build();
             AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
 
-        } else {
-
-            bindSpotifyPlayerService(token);
-
-        }
     }
 
     private void bindSpotifyPlayerService(String token){
@@ -137,6 +136,20 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         nowPlayingArtist = (TextView) findViewById(R.id.song_detail);
     }
 
+    private void setBPMViews(){
+        bpmRange = (TextView) findViewById(R.id.bpm_range);
+        bpmValue = (TextView) findViewById(R.id.bpm_setting);
+
+        setInitialBPMValues();
+    }
+
+    private void setInitialBPMValues(){
+
+        float position = leftMargin + (width/2);
+        bpmValue.setText("BPM Value: " +(int)(60.0f + ((position - 200.0f)/4.86f)));
+        bpmRange.setText("BPM Range: " +(int)(5.0f +((width - 400.0f)/5.44f)));
+    }
+
     private void setButtonOnClickListener(Button button,final int type){
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -149,7 +162,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                         playerService.pauseSong();
                         break;
                     case 2:
-                        playerService.stopSong();
+                        playerService.nextSong();
                         break;
                     default:
                         break;
@@ -178,20 +191,23 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         Point size = new Point();
         display.getSize(size);
 
-        width = setButtonWidth(size,buttonWidth,sliderRatio);
+        width = setButtonWidth(size, buttonWidth, sliderRatio);
 
         Log.d(TAG_MAIN, "SIZE OF X " + size.x);
         RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
         layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
 
         if (sliderRatio == -1) {
-            layoutParams.leftMargin = (size.x / 2) - (width / 2);
+            width = 400;
+            leftMargin = (size.x / 2) - (width / 2);
+            layoutParams.leftMargin = leftMargin;
             sliderBar.setProgress(50);
             sliderBar.setProgressTintList(ColorStateList.valueOf(Color.rgb(103, 11, 119)));
         } else {
             double sliderPercent = (double) sliderRatio / 100.0;
             Double sliderLeftMarginDouble = sliderPercent * (double) size.x;
-            layoutParams.leftMargin = sliderLeftMarginDouble.intValue() - (width/2);
+            leftMargin = sliderLeftMarginDouble.intValue() - (width/2);
+            layoutParams.leftMargin = leftMargin;
             setSliderColor(sliderPercent, sliderBar);
             sliderBar.setProgress(sliderRatio);
             Log.d(TAG_MAIN, "This is the progress ratio used to set color " + sliderPercent);
@@ -199,7 +215,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
         sliderButton.setLayoutParams(layoutParams);
 
-        sliderButtonListener = new SliderButtonListener(this,null,root,sliderBar);
+        sliderButtonListener = new SliderButtonListener(this,null,root, sliderBar);
         sliderButton.setOnTouchListener(sliderButtonListener);
 
     }
@@ -212,6 +228,16 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
         setSliderColor(progressRatio, sliderBar);
         sliderBar.setProgress(dProgress.intValue());
+    }
+
+    @Override
+    public void setRange(float range) {
+        bpmRange.setText("BPM Range: " + (int)range );
+    }
+
+    @Override
+    public void setBPMValue(float value) {
+        bpmValue.setText("BPM Value: " + (int)value);
     }
 
     public static void setSliderColor(Double progressRatio, ProgressBar sliderBar){
@@ -314,12 +340,11 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     public void setSongListFragment() {
+        Log.d(TAG_MAIN,"setSongListFragment is called, token is " + token);
         songListFragment = (SongListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_song_list);
         songListFragment.initSongRecyclerView(true);
         sliderButtonListener.setFragmentToListener(songListFragment);
-        songListFragment.setTokenFromMain(token);
-
         SongListFragment songListPlayedFragment = (SongListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_song_list_played);
         songListPlayedFragment.initSongRecyclerView(false);
@@ -329,7 +354,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-
+        Log.d(TAG_MAIN,"On activity result is called");
         if (requestCode == REQUEST_CODE_SPOTIFY) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
@@ -339,7 +364,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 editor.putString(KEY_SERVICE_TOKEN, response.getAccessToken());
                 editor.apply();
                 token = response.getAccessToken();
+                songListFragment.setTokenFromMain(token);
+                Log.d(TAG_MAIN, "Token is set to class variable after Authenitication " + token);
                 bindSpotifyPlayerService(response.getAccessToken());
+
             }
         }
     }
@@ -361,8 +389,6 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
             isBound = false;
         }
     };
-
-    //Authentication call back interface methods
 
     @Override
     public void onLoggedIn() {
@@ -400,8 +426,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         itemList = listItem;
         Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
         if (listItem.size() > 0) {
-            playerService.setQueue(listItem);
+            playerService.setQueue(listItem,isFrist);
             updateNowPlayingViews(0);
+            isFrist = false;
         } else {
             Toast.makeText(this,"Your Filter Didn't Any Results. Adjust Your Filter and Try Again",Toast.LENGTH_LONG).show();
         }
