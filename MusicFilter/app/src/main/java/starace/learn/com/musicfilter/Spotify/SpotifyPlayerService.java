@@ -95,6 +95,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
     public void nextSong(){
         spotifyPlayer.skipToNext();
+        //// TODO: 5/15/16 update nowPlaying view; 
     }
 
     public void setQueue(List<Item> items, Boolean isFirst){

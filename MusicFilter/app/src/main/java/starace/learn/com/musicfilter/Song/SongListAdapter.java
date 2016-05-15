@@ -26,14 +26,16 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
     private boolean isFirst;
     private Context context;
     RecyclerClickEvent clickEvent;
+    SongListFragment songListFragment;
 
 
-    public SongListAdapter(Context context, List<Item> songList, boolean isFirst) {
+    public SongListAdapter(SongListFragment fragment, List<Item> songList, boolean isFirst) {
+        this.context = fragment.getActivity();
         this.songList = songList;
-        this.inflater = LayoutInflater.from(context);
+        this.inflater = LayoutInflater.from(this.context);
         this.isFirst = isFirst;
-        this.context = context;
-        this.clickEvent = (RecyclerClickEvent) context;
+        this.songListFragment = fragment;
+        this.clickEvent = (RecyclerClickEvent) this.context;
 
     }
 
@@ -65,9 +67,14 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
 
                 }
             });
+            if (position >= songList.size()- 1 ){
+                songListFragment.extendSongList();
+                Log.d(TAG_SONG_ADAPTER,"ExtendSongList has been called");
+            }
         } else {
             holder.itemView.setBackgroundColor(context.getColor(R.color.colorPlayedListBackground));
         }
+
     }
 
     @Override
@@ -91,6 +98,10 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
 
     public interface RecyclerClickEvent{
         void handleRecyclerClickEvent(int pos);
+    }
+
+    public interface ExtendRecyclerViewData{
+        void extendSongList();
     }
 
 

@@ -16,7 +16,9 @@ import android.view.ViewGroup;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import rx.Observable;
 import rx.Subscriber;
@@ -40,7 +42,7 @@ import starace.learn.com.musicfilter.Spotify.Retrofit.SpotifyRetrofitService;
  * Created by mstarace on 5/3/16.
  */
 public class SongListFragment extends Fragment implements
-        SliderButtonListener.UpdateAdapterOnDoubleTap {
+        SliderButtonListener.UpdateAdapterOnDoubleTap, SongListAdapter.ExtendRecyclerViewData {
 
     private static final String TAG_SONG_FRAG = "SongListFragment";
     private List<Item> songList;
@@ -51,19 +53,28 @@ public class SongListFragment extends Fragment implements
     RecyclerView songRecyclerView;
     private String token;
     SongListAdapter.RecyclerClickEvent recyclerClickEvent;
+    private boolean isNew;
+    private float tempo;
+    private float range;
+    private Map<String,List<Integer>> offsetList;
+    private Map<String,Integer> offsetPosition;
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         songFragmentView = inflater.inflate(R.layout.song_list_fragment_main, container, false);
-        recyclerClickEvent = new SongListAdapter.RecyclerClickEvent() {
-            @Override
-            public void handleRecyclerClickEvent(int pos) {
-
-            }
-        };
+//        recyclerClickEvent = new SongListAdapter.RecyclerClickEvent() {
+//            @Override
+//            public void handleRecyclerClickEvent(int pos) {
+//
+//            }
+//        };
         return songFragmentView;
     }
+
+
+
+
 
     //fake data setup
     private void setUpFakeData() {
@@ -81,11 +92,12 @@ public class SongListFragment extends Fragment implements
         setUpFakeData();
 
         songRecyclerView = (RecyclerView) songFragmentView.findViewById(R.id.song_list_recycler_view);
-        songListAdapter = new SongListAdapter(getActivity(), songList, isFragment);
+        songListAdapter = new SongListAdapter(this, songList, isFragment);
         songRecyclerView.setAdapter(songListAdapter);
         songRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         songRecyclerView.setHasFixedSize(true);
 
+        setUpOffsetMangerMaps();
     }
 
     //Magic happens here
@@ -107,8 +119,11 @@ public class SongListFragment extends Fragment implements
 
 
                                 for (String curGenre : listGenre) {
-                                    int offset = randomOffsetInt();
-                                    Log.d(TAG_SONG_FRAG, "THE RANDOM OFFSET IS " + offset);
+                                    int pos = offsetPosition.get(curGenre);
+                                    int offset = offsetList.get(curGenre).get(pos);
+                                    Log.d(TAG_SONG_FRAG, "THE Mapped OFFSET IS " + offset + " AT LIST POS " + pos);
+                                    Log.d(TAG_SONG_FRAG, "THE Genre is " + curGenre);
+
                                     Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
                                             String.valueOf(offset),"50", "track");
 
@@ -124,6 +139,7 @@ public class SongListFragment extends Fragment implements
                                             return item.getAvailable_markets().contains("US");
                                         }
                                     }));
+                                    offsetPosition.put(curGenre,pos + 1);
                                 }
                                 return Observable.merge(zipObservableList).toList();
                             }
@@ -185,14 +201,8 @@ public class SongListFragment extends Fragment implements
                 .subscribe(new Subscriber<List<Item>>() {
                     @Override
                     public void onCompleted() {
-                        songRecyclerView.smoothScrollToPosition(0);
-                        SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
-                        setSongItemsToMain.passSongItemsToMain(songList);
-                        if (songList.size()>0) {
-                            songListAdapter.notifyDataSetChanged();
-                            songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
-                            songRecyclerView.invalidate();
-                        }
+
+                        onGetTrackCompleted();
                         Log.d(TAG_SONG_FRAG, "Oncmpleted had been called END");
                     }
 
@@ -204,11 +214,23 @@ public class SongListFragment extends Fragment implements
 
                     @Override
                     public void onNext(List<Item> items) {
-                        Log.d(TAG_SONG_FRAG, "OnNext had been called");
-                        songList.clear();
-                        Collections.shuffle(items);
-                        songList.addAll(items);
+                        Log.d(TAG_SONG_FRAG, "OnNext had been called and the number of Items is " +items.size());
+                        if (isNew) {
+                            songList.clear();
+                            Collections.shuffle(items);
+                            songList.addAll(items);
+                        } else if (items.size() > 0) {
+                            for (Item curitem: items){
+                                Log.d(TAG_SONG_FRAG, "This is the song name " + curitem.getName());
+                            }
+                            Collections.shuffle(items);
+                            Log.d(TAG_SONG_FRAG, "This is the size of the songList before adding " + songList.size());
+                            songList.addAll(items);
+                            Log.d(TAG_SONG_FRAG, "This is the size of the songList after adding " + songList.size());
 
+                        } else {
+                            Log.d(TAG_SONG_FRAG,"No items found in OnNext");
+                        }
                     }
                 });
     }
@@ -218,8 +240,27 @@ public class SongListFragment extends Fragment implements
         return Observable.just(genreList);
     }
 
+    private void onGetTrackCompleted(){
+        if (isNew) {
+            songRecyclerView.smoothScrollToPosition(0);
+            Log.d(TAG_SONG_FRAG, "IS NEW IS TURE");
+        }
+        SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
+        setSongItemsToMain.passSongItemsToMain(songList);
+        if (songList.size()>0) {
+            songListAdapter.notifyDataSetChanged();
+            songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
+            songRecyclerView.invalidate();
+        }
+        isNew = false;
+    }
+
     @Override
     public void updateAdapterOnDoubleTap(float tempo, float range) {
+        isNew = true;
+        shuffleOffsetList();
+        this.tempo = tempo;
+        this.range = range;
         getTrackData(tempo, range);
     }
 
@@ -228,9 +269,9 @@ public class SongListFragment extends Fragment implements
         Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN IN THE FRAGMENT " + token);
     }
 
-    private int randomOffsetInt() {
-        return (int) (Math.random() * 100.0);
-    }
+//    private int randomOffsetInt() {
+//        return (int) (Math.random() * 100.0);
+//    }
 
     private String setGenreString() {
         List<String> cleanGenreList = new ArrayList<>();
@@ -258,4 +299,46 @@ public class SongListFragment extends Fragment implements
     public interface SetSongItemsToMain {
         void passSongItemsToMain(List<Item> listItem);
     }
+
+    @Override
+    public void extendSongList() {
+        getTrackData(tempo,range);
+    }
+
+    private void setUpOffsetMangerMaps(){
+        offsetList = new HashMap<>();
+        offsetPosition = new HashMap<>();
+        String[] genreList = getResources().getStringArray(R.array.genre);
+        int[] genrePages = getResources().getIntArray(R.array.genrePages);
+        for (int i = 0; i < genreList.length; i++){
+            offsetPosition.put(genreList[i],0);
+            setUpOffsetList(genreList[i],genrePages[i]);
+        }
+
+    }
+
+    private void setUpOffsetList(String genre,int genrePages) {
+        List<Integer> pageOrder = new ArrayList<>();
+
+        for (int i = 0; i <= genrePages ; i++){
+            pageOrder.add(i);
+        }
+
+        offsetList.put(genre,pageOrder);
+    }
+
+    private void shuffleOffsetList(){
+        for(Map.Entry<String,List<Integer>> entry : offsetList.entrySet()){
+            List<Integer> curList = entry.getValue();
+            Collections.shuffle(curList);
+            entry.setValue(curList);
+        }
+        for (Map.Entry<String,Integer> entry : offsetPosition.entrySet()){
+            entry.setValue(0);
+        }
+
+
+
+    }
+
 }

@@ -78,12 +78,12 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private TextView nowPlayingArtist;
     private TextView bpmRange;
     private TextView bpmValue;
-    private Boolean isFrist;
+    private Boolean isFirst;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        isFrist = true;
+        isFirst = true;
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
@@ -425,13 +425,17 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     public void passSongItemsToMain(List<Item> listItem) {
         itemList = listItem;
         Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
-        if (listItem.size() > 0) {
-            playerService.setQueue(listItem,isFrist);
+        if (listItem.size() > 0 && isFirst) {
+            Log.d(TAG_MAIN, "PassSongItems to main has been calls and ISFIRST");
+            playerService.setQueue(listItem,isFirst);
             updateNowPlayingViews(0);
-            isFrist = false;
+            isFirst = false;
+        } else if (listItem.size() < 1){
+            Toast.makeText(this,"Your Filter Didn't Return Any Results. Adjust Your Filter and Try Again",Toast.LENGTH_SHORT).show();
         } else {
-            Toast.makeText(this,"Your Filter Didn't Any Results. Adjust Your Filter and Try Again",Toast.LENGTH_LONG).show();
+            Log.d(TAG_MAIN,"PassSongItems to main has been called and is not FIRST");
         }
+
     }
 
     @Override
