@@ -35,6 +35,7 @@ public class SpotifyRetrofitService {
         Observable<RootTrack> tracks (
                 @Query("query") String query,
                 @Query("offset") String offset,
+                @Query("limit") String limit,
                 @Query("type") String type);
     }
 

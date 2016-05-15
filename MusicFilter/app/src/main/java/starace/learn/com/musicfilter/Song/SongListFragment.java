@@ -88,6 +88,7 @@ public class SongListFragment extends Fragment implements
 
     }
 
+    //Magic happens here
 
     public void getTrackData(final Float tempo, final Float range) {
         Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
@@ -109,7 +110,7 @@ public class SongListFragment extends Fragment implements
                                     int offset = randomOffsetInt();
                                     Log.d(TAG_SONG_FRAG, "THE RANDOM OFFSET IS " + offset);
                                     Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
-                                            String.valueOf(offset), "track");
+                                            String.valueOf(offset),"50", "track");
 
                                     zipObservableList.add(genreObservable.flatMap(new Func1<RootTrack, Observable<Item>>() {
                                         @Override
