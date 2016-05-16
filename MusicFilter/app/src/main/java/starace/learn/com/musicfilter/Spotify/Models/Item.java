@@ -13,6 +13,7 @@ public class Item {
     private String name;
     private String id;
     private String uri;
+    private float tempo;
 
     public Item(Album album, Artist[] artists, String[] available_markets, String id, String name, String uri) {
         this.album = album;
@@ -46,5 +47,13 @@ public class Item {
 
     public String getUri() {
         return uri;
+    }
+
+    public void setTempo(float tempo){
+        this.tempo = tempo;
+    }
+
+    public float getTempo(){
+        return this.tempo;
     }
 }

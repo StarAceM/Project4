@@ -67,10 +67,7 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
 
                 }
             });
-            if (position >= songList.size()- 1 ){
-                songListFragment.extendSongList();
-                Log.d(TAG_SONG_ADAPTER,"ExtendSongList has been called");
-            }
+
         } else {
             holder.itemView.setBackgroundColor(context.getColor(R.color.colorPlayedListBackground));
         }
@@ -99,11 +96,5 @@ public class SongListAdapter extends RecyclerView.Adapter<SongListAdapter.ViewHo
     public interface RecyclerClickEvent{
         void handleRecyclerClickEvent(int pos);
     }
-
-    public interface ExtendRecyclerViewData{
-        void extendSongList();
-    }
-
-
 
 }

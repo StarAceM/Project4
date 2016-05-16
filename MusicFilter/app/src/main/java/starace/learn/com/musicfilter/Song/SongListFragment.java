@@ -42,7 +42,7 @@ import starace.learn.com.musicfilter.Spotify.Retrofit.SpotifyRetrofitService;
  * Created by mstarace on 5/3/16.
  */
 public class SongListFragment extends Fragment implements
-        SliderButtonListener.UpdateAdapterOnDoubleTap, SongListAdapter.ExtendRecyclerViewData {
+        SliderButtonListener.UpdateAdapterOnDoubleTap{
 
     private static final String TAG_SONG_FRAG = "SongListFragment";
     private List<Item> songList;
@@ -52,29 +52,19 @@ public class SongListFragment extends Fragment implements
     SongListAdapter songListAdapter;
     RecyclerView songRecyclerView;
     private String token;
-    SongListAdapter.RecyclerClickEvent recyclerClickEvent;
     private boolean isNew;
-    private float tempo;
-    private float range;
-    private Map<String,List<Integer>> offsetList;
-    private Map<String,Integer> offsetPosition;
+    private Map<String,Integer> totalSongsGenreMap;
+    private Map<String, List<Integer>> offsetMap;
+    private Map<String, List<Integer>> offsetLimitMap;
+    private List<String> genreListString;
 
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         songFragmentView = inflater.inflate(R.layout.song_list_fragment_main, container, false);
-//        recyclerClickEvent = new SongListAdapter.RecyclerClickEvent() {
-//            @Override
-//            public void handleRecyclerClickEvent(int pos) {
-//
-//            }
-//        };
+
         return songFragmentView;
     }
-
-
-
-
 
     //fake data setup
     private void setUpFakeData() {
@@ -97,14 +87,23 @@ public class SongListFragment extends Fragment implements
         songRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         songRecyclerView.setHasFixedSize(true);
 
+        if (isFragment)
         setUpOffsetMangerMaps();
+    }
+
+    private String getNavdrawerPreferences() {
+
+        SharedPreferences sharedPreferences = getActivity().
+                getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+
+        return sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF, "");
     }
 
     //Magic happens here
 
     public void getTrackData(final Float tempo, final Float range) {
         Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
-        String commaListGenre = setGenreString();
+        String commaListGenre = setGenreString(getNavdrawerPreferences());
 
         Log.d(TAG_SONG_FRAG, "THIS IS THE TOKEN PASSED TO RETROFIT SERICE " + this.token);
         featureAPI = SpotifyRetrofitService.createFeature(this.token);
@@ -117,30 +116,33 @@ public class SongListFragment extends Fragment implements
 
                                 List<Observable<Item>> zipObservableList = new ArrayList<>();
 
-
                                 for (String curGenre : listGenre) {
-                                    int pos = offsetPosition.get(curGenre);
-                                    int offset = offsetList.get(curGenre).get(pos);
-                                    Log.d(TAG_SONG_FRAG, "THE Mapped OFFSET IS " + offset + " AT LIST POS " + pos);
-                                    Log.d(TAG_SONG_FRAG, "THE Genre is " + curGenre);
 
-                                    Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
-                                            String.valueOf(offset),"50", "track");
+                                    for (int i = 0; i < offsetMap.get(curGenre).size(); i++) {
+                                        int offset = offsetMap.get(curGenre).get(i);
+                                        int limit = offsetLimitMap.get(curGenre).get(i);
+                                        Log.d(TAG_SONG_FRAG, "THE Mapped OFFSET IS " + offset + " AT LIST POS " + i + " Limit = " + limit);
+                                        Log.d(TAG_SONG_FRAG, "THE Genre is " + curGenre);
 
-                                    zipObservableList.add(genreObservable.flatMap(new Func1<RootTrack, Observable<Item>>() {
-                                        @Override
-                                        public Observable<Item> call(RootTrack rootTrack) {
+                                        //add a look to get all tracks of a genre
+                                        Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
+                                                String.valueOf(offset), String.valueOf(limit), "track");
 
-                                            return Observable.from(rootTrack.getTracks().getItems());
-                                        }
-                                    }).filter(new Func1<Item, Boolean>() {
-                                        @Override
-                                        public Boolean call(Item item) {
-                                            return item.getAvailable_markets().contains("US");
-                                        }
-                                    }));
-                                    offsetPosition.put(curGenre,pos + 1);
+                                        zipObservableList.add(genreObservable.flatMap(new Func1<RootTrack, Observable<Item>>() {
+                                            @Override
+                                            public Observable<Item> call(RootTrack rootTrack) {
+
+                                                return Observable.from(rootTrack.getTracks().getItems());
+                                            }
+                                        }).filter(new Func1<Item, Boolean>() {
+                                            @Override
+                                            public Boolean call(Item item) {
+                                                return item.getAvailable_markets().contains("US");
+                                            }
+                                        }));
+                                    }
                                 }
+
                                 return Observable.merge(zipObservableList).toList();
                             }
                         });
@@ -214,13 +216,16 @@ public class SongListFragment extends Fragment implements
 
                     @Override
                     public void onNext(List<Item> items) {
-                        Log.d(TAG_SONG_FRAG, "OnNext had been called and the number of Items is " +items.size());
+                        Log.d(TAG_SONG_FRAG, "OnNext had been called and the number of Items is " + items.size());
                         if (isNew) {
+                            for (Item curitem : items) {
+                                Log.d(TAG_SONG_FRAG, "This is the song name " + curitem.getName());
+                            }
                             songList.clear();
                             Collections.shuffle(items);
                             songList.addAll(items);
                         } else if (items.size() > 0) {
-                            for (Item curitem: items){
+                            for (Item curitem : items) {
                                 Log.d(TAG_SONG_FRAG, "This is the song name " + curitem.getName());
                             }
                             Collections.shuffle(items);
@@ -229,7 +234,7 @@ public class SongListFragment extends Fragment implements
                             Log.d(TAG_SONG_FRAG, "This is the size of the songList after adding " + songList.size());
 
                         } else {
-                            Log.d(TAG_SONG_FRAG,"No items found in OnNext");
+                            Log.d(TAG_SONG_FRAG, "No items found in OnNext");
                         }
                     }
                 });
@@ -240,14 +245,14 @@ public class SongListFragment extends Fragment implements
         return Observable.just(genreList);
     }
 
-    private void onGetTrackCompleted(){
+    private void onGetTrackCompleted() {
         if (isNew) {
             songRecyclerView.smoothScrollToPosition(0);
             Log.d(TAG_SONG_FRAG, "IS NEW IS TURE");
         }
         SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
         setSongItemsToMain.passSongItemsToMain(songList);
-        if (songList.size()>0) {
+        if (songList.size() > 0) {
             songListAdapter.notifyDataSetChanged();
             songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
             songRecyclerView.invalidate();
@@ -258,9 +263,6 @@ public class SongListFragment extends Fragment implements
     @Override
     public void updateAdapterOnDoubleTap(float tempo, float range) {
         isNew = true;
-        shuffleOffsetList();
-        this.tempo = tempo;
-        this.range = range;
         getTrackData(tempo, range);
     }
 
@@ -269,17 +271,8 @@ public class SongListFragment extends Fragment implements
         Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN IN THE FRAGMENT " + token);
     }
 
-//    private int randomOffsetInt() {
-//        return (int) (Math.random() * 100.0);
-//    }
-
-    private String setGenreString() {
+    private String setGenreString(String rawGenre) {
         List<String> cleanGenreList = new ArrayList<>();
-
-        SharedPreferences sharedPreferences = getActivity().
-                getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
-
-        String rawGenre = sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF, "");
 
         if (!rawGenre.equals("")) {
             List<String> rawGenreList = Arrays.asList(rawGenre.split(","));
@@ -300,44 +293,105 @@ public class SongListFragment extends Fragment implements
         void passSongItemsToMain(List<Item> listItem);
     }
 
-    @Override
-    public void extendSongList() {
-        getTrackData(tempo,range);
+    private void setUpOffsetMangerMaps() {
+        offsetMap = new HashMap<>();
+        offsetLimitMap = new HashMap<>();
+        totalSongsGenreMap = new HashMap<>();
+        genreListString = new ArrayList<>();
+
+        String[] rawList = getResources().getStringArray(R.array.genre);
+        for (int i = 1; i < rawList.length; i++){
+            genreListString.add(rawList[i]);
+        }
+
+        Log.d(TAG_SONG_FRAG, "The Loop has been called to get song totals");
+        getSongTotalsGenre(genreListString);
+
     }
 
-    private void setUpOffsetMangerMaps(){
-        offsetList = new HashMap<>();
-        offsetPosition = new HashMap<>();
-        String[] genreList = getResources().getStringArray(R.array.genre);
-        int[] genrePages = getResources().getIntArray(R.array.genrePages);
-        for (int i = 0; i < genreList.length; i++){
-            offsetPosition.put(genreList[i],0);
-            setUpOffsetList(genreList[i],genrePages[i]);
+    private void setUpOffsetList(String genre, int total) {
+        List<Integer> offsetList = new ArrayList<>();
+        List<Integer> limitList = new ArrayList<>();
+        if (total/50 != 0) {
+           int offsetCounter = 0;
+           for (int i = 0; i <= total/50; i++) {
+               offsetCounter = i* 50;
+               if(total%50 ==0 && i == total/50) {
+
+               } else if(i == total/50) {
+                   limitList.add(total - ((i -1)*50));
+                   offsetList.add(offsetCounter);
+               } else {
+                   offsetList.add(offsetCounter);
+                   limitList.add(50);
+               }
+
+           }
+            Log.d(TAG_SONG_FRAG, genre + "has an offset list size " + offsetList.size() +
+                    " and and a limit list " + limitList.size());
+            this.offsetMap.put(genre,offsetList);
+            this.offsetLimitMap.put(genre,limitList);
+            Log.d(TAG_SONG_FRAG, genre + "has an offset list size " + offsetMap.size() +
+                    " and and a limit list " + offsetLimitMap.size());
         }
 
     }
 
-    private void setUpOffsetList(String genre,int genrePages) {
-        List<Integer> pageOrder = new ArrayList<>();
+    private void getSongTotalsGenre(final List<String> genreList){
+        //make api calls to get totals for all genres
 
-        for (int i = 0; i <= genrePages ; i++){
-            pageOrder.add(i);
-        }
+        String commaListGenre = setGenreString(TextUtils.join(",",genreList));
 
-        offsetList.put(genre,pageOrder);
-    }
+        Observable<List<Integer>> listGenreTotals =
+                createStringObservable(commaListGenre).subscribeOn(Schedulers.newThread())
+                        .flatMap(new Func1<List<String>, Observable<List<Integer>>>() {
+                            @Override
+                            public Observable<List<Integer>> call(List<String> listGenre) {
 
-    private void shuffleOffsetList(){
-        for(Map.Entry<String,List<Integer>> entry : offsetList.entrySet()){
-            List<Integer> curList = entry.getValue();
-            Collections.shuffle(curList);
-            entry.setValue(curList);
-        }
-        for (Map.Entry<String,Integer> entry : offsetPosition.entrySet()){
-            entry.setValue(0);
-        }
+                                List<Observable<Integer>> zipObservableList = new ArrayList<>();
 
+                                for (String curGenre : listGenre) {
+                                    Log.d(TAG_SONG_FRAG, "The roottrack root has bee called at " + curGenre);
+                                    Observable<RootTrack> genreObservable = genreAPI.tracks("genre:" + curGenre,
+                                            "0", "1", "track");
 
+                                    zipObservableList.add(genreObservable.flatMap(new Func1<RootTrack, Observable<Integer>>() {
+                                        @Override
+                                        public Observable<Integer> call(RootTrack rootTrack) {
+                                            Log.d(TAG_SONG_FRAG, "the int total is " + rootTrack.getTracks().getTotal());
+                                            return Observable.just(Integer.valueOf(rootTrack.getTracks().getTotal()));
+                                        }
+                                    }));
+                                }
+
+                                return Observable.merge(zipObservableList).toList();
+                            }
+                        });
+
+        listGenreTotals
+            .observeOn(AndroidSchedulers.mainThread())
+            .subscribe(new Subscriber<List<Integer>>() {
+                @Override
+                public void onCompleted() {
+                    for(String genre : genreList){
+                        setUpOffsetList(genre,totalSongsGenreMap.get(genre));
+                    }
+
+                }
+
+                @Override
+                public void onError(Throwable e) {
+
+                }
+
+                @Override
+                public void onNext(List<Integer> integers) {
+                    for (int i = 0; i < integers.size(); i++) {
+                        totalSongsGenreMap.put(genreList.get(i),integers.get(i));
+                        Log.d(TAG_SONG_FRAG, "These are the song totals " + integers.get(i));
+                    }
+                }
+            });
 
     }
 
