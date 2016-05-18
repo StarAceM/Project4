@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Binder;
 import android.os.IBinder;
 import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.spotify.sdk.android.player.Config;
@@ -25,12 +26,20 @@ import starace.learn.com.musicfilter.Spotify.Models.Item;
  */
 public class SpotifyPlayerService extends Service implements PlayerNotificationCallback {
     private final static String TAG_PLAYER_SERVICE = "SpotifyPlayerService";
+    public final static String BROADCAST_INTENT = "BroadcastIntent";
+    public final static String BROADCAST_MESSAGE = "BroadcastMessage";
     private final IBinder spotifyBinder = new SpotifyBinder();
     private String token;
     private Player spotifyPlayer;
     private List<String> playList;
     private List<String> curPlayList;
     private boolean isSetQueue;
+    private int trackCounter;
+    private LocalBroadcastManager broadcaster;
+
+    public void onCreate() {
+        super.onCreate();
+    }
 
     @Nullable
     @Override
@@ -38,16 +47,17 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         token = intent.getExtras().getString(MainActivity.KEY_SERVICE_TOKEN);
         playList = new ArrayList<>();
         curPlayList = new ArrayList<>();
+        broadcaster = LocalBroadcastManager.getInstance(this);
         isSetQueue = false;
         Log.d(TAG_PLAYER_SERVICE, "This is the token in the Player Service " + token);
-
         Config playerConfig = new Config(this, token, MainActivity.CLIENT_ID);
         Spotify.getPlayer(playerConfig, this, new Player.InitializationObserver() {
             @Override
             public void onInitialized(Player player) {
                 spotifyPlayer = player;
-                ConnectionStateCallback connectionStateCallback = (ConnectionStateCallback) new MainActivity();
-                PlayerNotificationCallback playerNotificationCallback = (PlayerNotificationCallback) new SpotifyPlayerService();
+                ConnectionStateCallback connectionStateCallback = new MainActivity();
+                PlayerNotificationCallback playerNotificationCallback = SpotifyPlayerService.this;
+
                 spotifyPlayer.addConnectionStateCallback(connectionStateCallback);
                 spotifyPlayer.addPlayerNotificationCallback(playerNotificationCallback);
 
@@ -77,7 +87,16 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
     @Override
     public void onPlaybackEvent(EventType eventType, PlayerState playerState) {
-
+        Log.d(TAG_PLAYER_SERVICE,"THIS IS THE PLAYBACK EVENT " + eventType +", PlayerState is " + playerState.toString());
+        switch (eventType){
+            case AUDIO_FLUSH:
+                Log.d(TAG_PLAYER_SERVICE, "Track_Changed handled");
+                sendMessage(trackCounter);
+                trackCounter += 1;
+                break;
+            default:
+                break;
+        }
     }
 
     @Override
@@ -95,10 +114,11 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
     public void nextSong(){
         spotifyPlayer.skipToNext();
-        //// TODO: 5/15/16 update nowPlaying view; 
     }
 
-    public void setQueue(List<Item> items, Boolean isFirst){
+    public void setQueue(List<Item> items){
+        trackCounter = 0;
+
         Log.d(TAG_PLAYER_SERVICE, "setQue has been called");
         playList.clear();
         curPlayList.clear();
@@ -107,15 +127,13 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         }
         curPlayList.addAll(playList);
         Log.d(TAG_PLAYER_SERVICE, "This is the size of the curPlayList " + curPlayList.size());
-        if(!isFirst){
-            Log.d(TAG_PLAYER_SERVICE,"this is the boolena isfirst " + isFirst.toString());
-            spotifyPlayer.skipToNext();
-        }
+        spotifyPlayer.skipToNext();
         spotifyPlayer.play(curPlayList);
         isSetQueue = true;
     }
 
     public void jumpTheQueue(int pos){
+        trackCounter = pos;
         Log.d(TAG_PLAYER_SERVICE, "JumptheQueue Has been called");
         Log.d(TAG_PLAYER_SERVICE, "Size of playlist at Jump " + playList.size());
         //check to make sure the queue has already been set
@@ -127,6 +145,13 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
             Log.d(TAG_PLAYER_SERVICE,"issetqueue is " + isSetQueue);
         }
         Log.d(TAG_PLAYER_SERVICE, "JumpTheQue has finished");
+    }
+
+    public void sendMessage(int pos){
+        Log.d(TAG_PLAYER_SERVICE, "this is the pos of BROADCAST INTENT");
+        Intent playerIntent = new Intent(BROADCAST_INTENT);
+        playerIntent.putExtra(BROADCAST_MESSAGE,pos);
+        broadcaster.sendBroadcast(playerIntent);
     }
 
 }

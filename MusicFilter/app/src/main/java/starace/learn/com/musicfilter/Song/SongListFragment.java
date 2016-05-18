@@ -218,9 +218,6 @@ public class SongListFragment extends Fragment implements
                     public void onNext(List<Item> items) {
                         Log.d(TAG_SONG_FRAG, "OnNext had been called and the number of Items is " + items.size());
                         if (isNew) {
-                            for (Item curitem : items) {
-                                Log.d(TAG_SONG_FRAG, "This is the song name " + curitem.getName());
-                            }
                             songList.clear();
                             Collections.shuffle(items);
                             songList.addAll(items);
@@ -248,7 +245,7 @@ public class SongListFragment extends Fragment implements
     private void onGetTrackCompleted() {
         if (isNew) {
             songRecyclerView.smoothScrollToPosition(0);
-            Log.d(TAG_SONG_FRAG, "IS NEW IS TURE");
+            Log.d(TAG_SONG_FRAG, "IS NEW IS TRUE");
         }
         SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
         setSongItemsToMain.passSongItemsToMain(songList);
@@ -312,30 +309,40 @@ public class SongListFragment extends Fragment implements
     private void setUpOffsetList(String genre, int total) {
         List<Integer> offsetList = new ArrayList<>();
         List<Integer> limitList = new ArrayList<>();
-        if (total/50 != 0) {
-           int offsetCounter = 0;
-           for (int i = 0; i <= total/50; i++) {
-               offsetCounter = i* 50;
-               if(total%50 ==0 && i == total/50) {
+        if (total > 0) {
+            if (total/50 != 0) {
 
-               } else if(i == total/50) {
-                   limitList.add(total - ((i -1)*50));
-                   offsetList.add(offsetCounter);
-               } else {
-                   offsetList.add(offsetCounter);
-                   limitList.add(50);
-               }
+                int offsetCounter = 0;
+                for (int i = 0; i <= total/50; i++) {
+                    offsetCounter = i* 50;
+                    if(total%50 ==0 && i == total/50) {
 
-           }
-            Log.d(TAG_SONG_FRAG, genre + "has an offset list size " + offsetList.size() +
-                    " and and a limit list " + limitList.size());
-            this.offsetMap.put(genre,offsetList);
-            this.offsetLimitMap.put(genre,limitList);
-            Log.d(TAG_SONG_FRAG, genre + "has an offset list size " + offsetMap.size() +
-                    " and and a limit list " + offsetLimitMap.size());
+                    } else if(i == total/50) {
+                        limitList.add(total - (i*50));
+                        offsetList.add(offsetCounter);
+                    } else {
+                        offsetList.add(offsetCounter);
+                        limitList.add(50);
+                    }
+
+                }
+
+
+            } else if(total%50 != 0){
+                //handle thee case where the total is under 50
+                limitList.add(total % 50);
+                offsetList.add(0);
+
+            }
+
+            offsetMap.put(genre,offsetList);
+            offsetLimitMap.put(genre,limitList);
+            Log.d(TAG_SONG_FRAG, "This is the offsetMap size " + offsetList.size());
+            Log.d(TAG_SONG_FRAG, "This is the offsetLimitMap size " + limitList.size());
+
         }
-
     }
+
 
     private void getSongTotalsGenre(final List<String> genreList){
         //make api calls to get totals for all genres

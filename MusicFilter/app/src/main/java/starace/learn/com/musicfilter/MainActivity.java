@@ -1,8 +1,10 @@
 package starace.learn.com.musicfilter;
 
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
@@ -10,6 +12,7 @@ import android.graphics.Color;
 import android.graphics.Point;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -78,16 +81,17 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private TextView nowPlayingArtist;
     private TextView bpmRange;
     private TextView bpmValue;
-    private Boolean isFirst;
+    private BroadcastReceiver receiver;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        isFirst = true;
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
         toolbar.setTitle("");
+
+        setUpBroadcastReceiver();
 
         setUpSpotifyLogin();
         getSharedPreferencesSlider();
@@ -102,6 +106,18 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         setUpNowPlayingViews();
 
         setSongListFragment();
+
+    }
+
+    private void setUpBroadcastReceiver(){
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int pos = intent.getIntExtra(SpotifyPlayerService.BROADCAST_MESSAGE,-1);
+                updateNowPlayingViews(pos);
+                Log.d(TAG_MAIN,"SpotifyPlayerService has been received");
+            }
+        };
 
     }
 
@@ -147,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
         float position = leftMargin + (width/2);
         bpmValue.setText("BPM Value: " +(int)(60.0f + ((position - 200.0f)/4.86f)));
-        bpmRange.setText("BPM Range: " +(int)(5.0f +((width - 400.0f)/5.44f)));
+        bpmRange.setText("BPM Range: " + (int) (5.0f + ((width - 400.0f) / 5.44f)));
     }
 
     private void setButtonOnClickListener(Button button,final int type){
@@ -237,7 +253,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     @Override
     public void setBPMValue(float value) {
-        bpmValue.setText("BPM Value: " + (int)value);
+        bpmValue.setText("BPM Value: " + (int) value);
     }
 
     public static void setSliderColor(Double progressRatio, ProgressBar sliderBar){
@@ -319,7 +335,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 .findFragmentById(R.id.fragment_navigation_drawer);
 
         drawerFragment.initDrawer((android.support.v4.widget.DrawerLayout) findViewById(R.id.drawer_layout_main),
-                toolbar, drawerEntries,isCheckedArray);
+                toolbar, drawerEntries, isCheckedArray);
         Log.d(TAG_MAIN, "THE initDrawer HAS BEEN CALLED ON MAIN");
     }
 
@@ -379,6 +395,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
             SpotifyPlayerService.SpotifyBinder spotifyBinder = (SpotifyPlayerService.SpotifyBinder) service;
             playerService = spotifyBinder.getService();
+
             isBound = true;
             Log.d(TAG_MAIN,"SERVICE IS CONNECTED");
         }
@@ -416,24 +433,29 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver,
+                new IntentFilter(SpotifyPlayerService.BROADCAST_INTENT));
+    }
+
+    @Override
     protected void onStop() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
         super.onStop();
-        //ToDo need to save desired info to database here to restore views upon resume
     }
 
     @Override
     public void passSongItemsToMain(List<Item> listItem) {
         itemList = listItem;
         Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
-        if (listItem.size() > 0 && isFirst) {
-            Log.d(TAG_MAIN, "PassSongItems to main has been calls and ISFIRST");
-            playerService.setQueue(listItem,isFirst);
-            updateNowPlayingViews(0);
-            isFirst = false;
+        if (listItem.size() > 0) {
+            Log.d(TAG_MAIN, "PassSongItems to main has been calls");
+            playerService.setQueue(listItem);
+//            updateNowPlayingViews(0);
         } else if (listItem.size() < 1){
-            Toast.makeText(this,"Your Filter Didn't Return Any Results. Adjust Your Filter and Try Again",Toast.LENGTH_SHORT).show();
-        } else {
-            Log.d(TAG_MAIN,"PassSongItems to main has been called and is not FIRST");
+            Toast.makeText(this,"Your Filter Didn't Return Any Results. Adjust Your Filter and Try Again",
+                    Toast.LENGTH_SHORT).show();
         }
 
     }
@@ -441,7 +463,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     public void handleRecyclerClickEvent(int pos) {
         playerService.jumpTheQueue(pos);
-        updateNowPlayingViews(pos);
+//        updateNowPlayingViews(pos);
         Log.d(TAG_MAIN, "jumpTheQueue has been called");
         //set view here
     }
