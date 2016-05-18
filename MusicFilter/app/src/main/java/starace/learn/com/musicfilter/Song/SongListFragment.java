@@ -28,12 +28,10 @@ import rx.schedulers.Schedulers;
 import starace.learn.com.musicfilter.MainActivity;
 import starace.learn.com.musicfilter.R;
 import starace.learn.com.musicfilter.SliderButtonListener;
-import starace.learn.com.musicfilter.Spotify.Models.Album;
-import starace.learn.com.musicfilter.Spotify.Models.Artist;
 import starace.learn.com.musicfilter.Spotify.Models.AudioFeatures;
 import starace.learn.com.musicfilter.Spotify.Models.Feature;
-import starace.learn.com.musicfilter.Spotify.Models.Image;
 import starace.learn.com.musicfilter.Spotify.Models.Item;
+import starace.learn.com.musicfilter.Spotify.Models.ItemRoot;
 import starace.learn.com.musicfilter.Spotify.Models.RootTrack;
 import starace.learn.com.musicfilter.Spotify.Retrofit.Filter;
 import starace.learn.com.musicfilter.Spotify.Retrofit.SpotifyRetrofitService;
@@ -45,7 +43,7 @@ public class SongListFragment extends Fragment implements
         SliderButtonListener.UpdateAdapterOnDoubleTap{
 
     private static final String TAG_SONG_FRAG = "SongListFragment";
-    private List<Item> songList;
+    private List<ItemRoot> songList;
     private View songFragmentView;
     final SpotifyRetrofitService.GenreSearch genreAPI = SpotifyRetrofitService.createGenre();
     SpotifyRetrofitService.FeatureSearch featureAPI;
@@ -58,28 +56,24 @@ public class SongListFragment extends Fragment implements
     private Map<String, List<Integer>> offsetLimitMap;
     private List<String> genreListString;
 
+
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         songFragmentView = inflater.inflate(R.layout.song_list_fragment_main, container, false);
-
         return songFragmentView;
     }
 
-    //fake data setup
-    private void setUpFakeData() {
-        Image fakeImage = new Image("https://i.scdn.co/image/97d34ddb81c34eca1d033fa423381d0d9bd2a03b", "width");
-        Artist fakeArtist = new Artist("Fake Artist Name");
-        Item fakeItem = new Item(new Album(new Image[]{fakeImage}, "fake album name"), new Artist[]{fakeArtist},
-                new String[]{"US"}, "isFake", "Fake Song Name", "fake uri");
-        songList = new ArrayList<>();
-        for (int i = 0; i < 10; i++) {
-            songList.add(fakeItem);
-        }
-    }
-
     public void initSongRecyclerView(boolean isFragment) {
-        setUpFakeData();
+        songList = new ArrayList<>();
+        GetStarterData getData = new GetStarterData(this.getResources());
+        if(isFragment){
+            setUpOffsetMangerMaps();
+            songList = getData.getWelcomeList();
+        } else {
+            songList = getData.getGuideData();
+        }
 
         songRecyclerView = (RecyclerView) songFragmentView.findViewById(R.id.song_list_recycler_view);
         songListAdapter = new SongListAdapter(this, songList, isFragment);
@@ -87,11 +81,9 @@ public class SongListFragment extends Fragment implements
         songRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity(), LinearLayoutManager.HORIZONTAL, false));
         songRecyclerView.setHasFixedSize(true);
 
-        if (isFragment)
-        setUpOffsetMangerMaps();
     }
 
-    private String getNavdrawerPreferences() {
+    private String getNavDrawerPreferences() {
 
         SharedPreferences sharedPreferences = getActivity().
                 getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
@@ -103,7 +95,7 @@ public class SongListFragment extends Fragment implements
 
     public void getTrackData(final Float tempo, final Float range) {
         Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
-        String commaListGenre = setGenreString(getNavdrawerPreferences());
+        String commaListGenre = setGenreString(getNavDrawerPreferences());
 
         Log.d(TAG_SONG_FRAG, "THIS IS THE TOKEN PASSED TO RETROFIT SERICE " + this.token);
         featureAPI = SpotifyRetrofitService.createFeature(this.token);
@@ -222,8 +214,8 @@ public class SongListFragment extends Fragment implements
                             Collections.shuffle(items);
                             songList.addAll(items);
                         } else if (items.size() > 0) {
-                            for (Item curitem : items) {
-                                Log.d(TAG_SONG_FRAG, "This is the song name " + curitem.getName());
+                            for (Item curItem : items) {
+                                Log.d(TAG_SONG_FRAG, "This is the song name " + curItem.getName());
                             }
                             Collections.shuffle(items);
                             Log.d(TAG_SONG_FRAG, "This is the size of the songList before adding " + songList.size());
@@ -247,14 +239,23 @@ public class SongListFragment extends Fragment implements
             songRecyclerView.smoothScrollToPosition(0);
             Log.d(TAG_SONG_FRAG, "IS NEW IS TRUE");
         }
+
         SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
-        setSongItemsToMain.passSongItemsToMain(songList);
+        setSongItemsToMain.passSongItemsToMain(castRootAsItem(songList));
         if (songList.size() > 0) {
             songListAdapter.notifyDataSetChanged();
             songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
             songRecyclerView.invalidate();
         }
         isNew = false;
+    }
+
+    private List<Item> castRootAsItem(List<ItemRoot> rootList) {
+        List<Item> itemList = new ArrayList<>();
+        for(ItemRoot root: rootList){
+            itemList.add((Item)root);
+        }
+        return itemList;
     }
 
     @Override

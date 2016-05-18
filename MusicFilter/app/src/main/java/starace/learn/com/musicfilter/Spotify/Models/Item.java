@@ -6,7 +6,7 @@ import java.util.Arrays;
 /**
  * Created by mstarace on 5/6/16.
  */
-public class Item {
+public class Item extends ItemRoot{
     private Album album;
     private String[] available_markets;
     private Artist[] artists;

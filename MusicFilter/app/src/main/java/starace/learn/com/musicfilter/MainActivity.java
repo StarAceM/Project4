@@ -35,10 +35,10 @@ import com.spotify.sdk.android.player.ConnectionStateCallback;
 import java.util.ArrayList;
 import java.util.List;
 
-import starace.learn.com.musicfilter.NavigationDrawer.NaviagtionEntry;
-import starace.learn.com.musicfilter.NavigationDrawer.NavigationDivider;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationDivider;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationEntry;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationToggle;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment;
-import starace.learn.com.musicfilter.NavigationDrawer.NavigationToggle;
 import starace.learn.com.musicfilter.Song.SongListAdapter;
 import starace.learn.com.musicfilter.Song.SongListFragment;
 import starace.learn.com.musicfilter.Spotify.Models.Item;
@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private ImageView nowPlayingImage;
     private TextView nowPlayingTitle;
     private TextView nowPlayingArtist;
+    private TextView nowPlayingBPM;
     private TextView bpmRange;
     private TextView bpmValue;
     private BroadcastReceiver receiver;
@@ -150,6 +151,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         nowPlayingImage = (ImageView) findViewById(R.id.song_image);
         nowPlayingTitle = (TextView) findViewById(R.id.song_title);
         nowPlayingArtist = (TextView) findViewById(R.id.song_detail);
+        nowPlayingBPM = (TextView) findViewById(R.id.song_bpm);
     }
 
     private void setBPMViews(){
@@ -323,7 +325,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
             Log.d(TAG_MAIN, "SUPPORT ACTION BAR IS NULL");
         }
         String[] navResourceArray = getResources().getStringArray(R.array.genre);
-        List<NaviagtionEntry> drawerEntries = new ArrayList<>();
+        List<NavigationEntry> drawerEntries = new ArrayList<>();
 
         drawerEntries.add(new NavigationDivider());
 
@@ -448,11 +450,11 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     public void passSongItemsToMain(List<Item> listItem) {
         itemList = listItem;
+        itemList.add((Item)listItem.get(0));
         Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
         if (listItem.size() > 0) {
             Log.d(TAG_MAIN, "PassSongItems to main has been calls");
             playerService.setQueue(listItem);
-//            updateNowPlayingViews(0);
         } else if (listItem.size() < 1){
             Toast.makeText(this,"Your Filter Didn't Return Any Results. Adjust Your Filter and Try Again",
                     Toast.LENGTH_SHORT).show();
@@ -463,9 +465,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     public void handleRecyclerClickEvent(int pos) {
         playerService.jumpTheQueue(pos);
-//        updateNowPlayingViews(pos);
         Log.d(TAG_MAIN, "jumpTheQueue has been called");
-        //set view here
     }
 
     private void updateNowPlayingViews(int pos){
@@ -477,6 +477,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 Log.d(TAG_MAIN, "This is the image url " + itemList.get(pos).getAlbum().getImages()[0].getImageURL());
                 Glide.with(this).load(itemList.get(pos).getAlbum().getImages()[0].getImageURL())
                         .into(nowPlayingImage);
+                nowPlayingBPM.setText("BPM: " + itemList.get(pos).getTempo());
             }
             Log.d(TAG_MAIN, "updateNowPlayingViews is finished");
         }

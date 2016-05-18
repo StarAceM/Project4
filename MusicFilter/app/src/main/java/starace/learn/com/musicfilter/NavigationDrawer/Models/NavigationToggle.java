@@ -1,9 +1,9 @@
-package starace.learn.com.musicfilter.NavigationDrawer;
+package starace.learn.com.musicfilter.NavigationDrawer.Models;
 
 /**
  * Created by mstarace on 5/2/16.
  */
-public class NavigationToggle extends NaviagtionEntry {
+public class NavigationToggle extends NavigationEntry {
 
     private String title;
     private boolean checked;

@@ -21,28 +21,32 @@
             android:layout_weight="2"
             android:orientation="vertical"
             android:layout_gravity="center_vertical"
+            android:layout_marginLeft="5dp"
+            android:layout_marginRight="5dp"
+
             >
 
             <TextView
                 android:id="@+id/song_title_recycler"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="2"
                 android:text="SOME SONG TITLE"
                 android:textSize="20sp"
                 android:textColor="@color/colorPrimaryDark"
                 android:layout_gravity="center"
+                android:textAlignment="center"
+
                 />
 
             <TextView
                 android:id="@+id/song_detail_recycler"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_weight="2"
                 android:text="SOME SONG description ......."
                 android:textSize="15sp"
                 android:textColor="@color/colorPrimaryDark"
                 android:layout_gravity="center"
+                android:textAlignment="center"
                 />
 
         </LinearLayout>
