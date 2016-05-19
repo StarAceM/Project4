@@ -35,6 +35,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     private List<String> curPlayList;
     private boolean isSetQueue;
     private int trackCounter;
+    private boolean isJump;
     private LocalBroadcastManager broadcaster;
 
     public void onCreate() {
@@ -49,6 +50,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         curPlayList = new ArrayList<>();
         broadcaster = LocalBroadcastManager.getInstance(this);
         isSetQueue = false;
+        isJump = false;
         Log.d(TAG_PLAYER_SERVICE, "This is the token in the Player Service " + token);
         Config playerConfig = new Config(this, token, MainActivity.CLIENT_ID);
         Spotify.getPlayer(playerConfig, this, new Player.InitializationObserver() {
@@ -90,10 +92,17 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         Log.d(TAG_PLAYER_SERVICE,"THIS IS THE PLAYBACK EVENT " + eventType +", PlayerState is " + playerState.toString());
         switch (eventType){
             case AUDIO_FLUSH:
-                Log.d(TAG_PLAYER_SERVICE, "Track_Changed handled");
+                Log.d(TAG_PLAYER_SERVICE, "Track_Changed handled Audio Flush and isJump " + isJump);
+                if (isJump)
                 sendMessage(trackCounter);
-                trackCounter += 1;
+                isJump = false;
                 break;
+            case TRACK_CHANGED:
+                Log.d(TAG_PLAYER_SERVICE, "Track_Changed handled Track Changed and isJump " + isJump);
+                if (!isJump){
+                    trackCounter +=1;
+                    sendMessage(trackCounter);
+                }
             default:
                 break;
         }
@@ -113,12 +122,12 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     }
 
     public void nextSong(){
-        spotifyPlayer.skipToNext();
+        jumpTheQueue(trackCounter + 1);
     }
 
     public void setQueue(List<Item> items){
         trackCounter = 0;
-
+        isJump = true;
         Log.d(TAG_PLAYER_SERVICE, "setQue has been called");
         playList.clear();
         curPlayList.clear();
@@ -134,6 +143,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
     public void jumpTheQueue(int pos){
         trackCounter = pos;
+        isJump = true;
         Log.d(TAG_PLAYER_SERVICE, "JumptheQueue Has been called");
         Log.d(TAG_PLAYER_SERVICE, "Size of playlist at Jump " + playList.size());
         //check to make sure the queue has already been set

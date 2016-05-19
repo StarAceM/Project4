@@ -28,10 +28,10 @@ public class GetStarterData {
 
     public    List<ItemRoot> getGuideData(){
         List<ItemRoot> rootList = new ArrayList<>();
-        rootList.add(new ItemStart(R.drawable.welcome_image,res.getString(R.string.guide_nav_title),res.getString(R.string.guide_nav_description)));
-        rootList.add(new ItemStart(R.drawable.welcome_image,res.getString(R.string.bpm_value_title),res.getString(R.string.bpm_value_description)));
-        rootList.add(new ItemStart(R.drawable.welcome_image,res.getString(R.string.bpm_range_title),res.getString(R.string.bpm_range_description)));
-        rootList.add(new ItemStart(R.drawable.welcome_image,res.getString(R.string.bpm_start_title),res.getString(R.string.bpm_start_description)));
+        rootList.add(new ItemStart(R.drawable.nav_image,res.getString(R.string.guide_nav_title),res.getString(R.string.guide_nav_description)));
+        rootList.add(new ItemStart(R.drawable.small_button_arrows,res.getString(R.string.bpm_value_title),res.getString(R.string.bpm_value_description)));
+        rootList.add(new ItemStart(R.drawable.big_button_arrows,res.getString(R.string.bpm_range_title),res.getString(R.string.bpm_range_description)));
+        rootList.add(new ItemStart(R.drawable.button_double_click,res.getString(R.string.bpm_start_title),res.getString(R.string.bpm_start_description)));
 
         return rootList;
     }

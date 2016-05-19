@@ -13,10 +13,12 @@ import android.graphics.Point;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -73,6 +75,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     public boolean isBound;
     private SpotifyPlayerService playerService;
     private List<Item> itemList;
+    private Toolbar toolbar;
     private Button playButton;
     private Button pauseButton;
     private Button stopButton;
@@ -88,26 +91,36 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
-        setSupportActionBar(toolbar);
-        toolbar.setTitle("");
-
+        initializeToolbar();
         setUpBroadcastReceiver();
-
         setUpSpotifyLogin();
         getSharedPreferencesSlider();
-
         setUpButtons();
         setButtonOnClickListener(playButton, 0);
         setButtonOnClickListener(pauseButton, 1);
         setButtonOnClickListener(stopButton,2);
-
         setBPMViews();
-
         setUpNowPlayingViews();
-
         setSongListFragment();
 
+    }
+
+    private void initializeToolbar(){
+        toolbar = (Toolbar) findViewById(R.id.toolbar_main);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowCustomEnabled(true);
+            getSupportActionBar().setDisplayOptions(android.support.v7.app.ActionBar.DISPLAY_SHOW_CUSTOM);
+            getSupportActionBar().setCustomView(getLayoutInflater().inflate(R.layout.toolbar, null),
+                    new ActionBar.LayoutParams(
+                            ActionBar.LayoutParams.WRAP_CONTENT,
+                            ActionBar.LayoutParams.MATCH_PARENT,
+                            Gravity.CENTER
+                    )
+            );
+
+            toolbar.setTitleTextColor(getResources().getColor(R.color.colorAccent, null));
+        }
     }
 
     private void setUpBroadcastReceiver(){
@@ -317,8 +330,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
      * @param isCheckedArray
      */
     private void setNavigationDrawer(ArrayList<Boolean> isCheckedArray) {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
-        setSupportActionBar(toolbar);
+
         if (getSupportActionBar()!= null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         } else {

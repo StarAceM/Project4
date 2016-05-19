@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">MusicFilter</string>
+    <string name="app_name">BeatBot</string>
 
     <string name="drawer_open">1</string>
     <string name="drawer_close">2</string>
@@ -22,19 +22,20 @@
         <item>Latin</item>
     </string-array>
 
-    <string name="welcome_title">Welcome to BeatSpot</string>
+    <string name="welcome_title">Welcome to BeatBot</string>
     <string name="welcome_description">If you are a first time user check out the guide below</string>
 
     <string name="guide_nav_title">Navigation Drawer</string>
     <string name="guide_nav_description">Open the Navigation Drawer and select your desired genres</string>
 
-    <string name="bpm_value_title">Set the beats per minute (BPM)</string>
+    <string name="bpm_value_title">Set beats per minute (BPM)</string>
     <string name="bpm_value_description">Slide the button left and right to set the BPM value</string>
 
-    <string name="bpm_range_title">Set the beats per minute range</string>
-    <string name="bpm_range_description">Place two fingers on the button then open and close to increase and decrease the range</string>
+    <string name="bpm_range_title">Set the BPM range</string>
+    <string name="bpm_range_description">Place two fingers on the button then open or close to change the range</string>
 
-    <string name="bpm_start_title">See a list of songs and start listening</string>
+    <string name="bpm_start_title">Start listening</string>
     <string name="bpm_start_description">Double tap the button to start listening and see a list of songs</string>
+    <string name="now_playing">Now Playing</string>
 
 </resources>
