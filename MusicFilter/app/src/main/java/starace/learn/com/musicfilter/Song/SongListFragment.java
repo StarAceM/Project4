@@ -51,10 +51,14 @@ public class SongListFragment extends Fragment implements
     RecyclerView songRecyclerView;
     private String token;
     private boolean isNew;
+    private boolean isNotSearching;
+    private SetIsSearching setIsSearching;
     private Map<String,Integer> totalSongsGenreMap;
     private Map<String, List<Integer>> offsetMap;
     private Map<String, List<Integer>> offsetLimitMap;
     private List<String> genreListString;
+
+
 
 
 
@@ -67,6 +71,7 @@ public class SongListFragment extends Fragment implements
 
     public void initSongRecyclerView(boolean isFragment) {
         songList = new ArrayList<>();
+        setIsSearching = (SetIsSearching) getActivity();
         GetStarterData getData = new GetStarterData(this.getResources());
         if(isFragment){
             setUpOffsetMangerMaps();
@@ -91,9 +96,10 @@ public class SongListFragment extends Fragment implements
         return sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF, "");
     }
 
-    //Magic happens here
-
     public void getTrackData(final Float tempo, final Float range) {
+        isNotSearching = false;
+        setIsSearching.setIsSearchingMain(isNotSearching);
+
         Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
         String commaListGenre = setGenreString(getNavDrawerPreferences());
 
@@ -176,6 +182,11 @@ public class SongListFragment extends Fragment implements
                     }).filter(new Func1<Feature, Boolean>() {
                         @Override
                         public Boolean call(Feature feature) {
+                            if (feature.getTempo() >= (tempo - range) && feature.getTempo() <= (tempo + range)){
+                                Log.d(TAG_SONG_FRAG, String.valueOf(tempo - range));
+                                Log.d(TAG_SONG_FRAG, String.valueOf(tempo + range));
+                                Log.d(TAG_SONG_FRAG, "THIS IS THE SELECTED SONG ID " + feature.getId());
+                            }
                             return feature.getTempo() >= (tempo - range) && feature.getTempo() <= (tempo + range);
                         }
                     }).toList()
@@ -197,7 +208,7 @@ public class SongListFragment extends Fragment implements
                     public void onCompleted() {
 
                         onGetTrackCompleted();
-                        Log.d(TAG_SONG_FRAG, "Oncmpleted had been called END");
+                        Log.d(TAG_SONG_FRAG, "OnCompleted had been called END");
                     }
 
                     @Override
@@ -235,6 +246,7 @@ public class SongListFragment extends Fragment implements
     }
 
     private void onGetTrackCompleted() {
+
         if (isNew) {
             songRecyclerView.smoothScrollToPosition(0);
             Log.d(TAG_SONG_FRAG, "IS NEW IS TRUE");
@@ -242,6 +254,7 @@ public class SongListFragment extends Fragment implements
 
         SetSongItemsToMain setSongItemsToMain = (SetSongItemsToMain) getActivity();
         setSongItemsToMain.passSongItemsToMain(castRootAsItem(songList));
+        setIsSearching.setIsSearchingMain(true);
         if (songList.size() > 0) {
             songListAdapter.notifyDataSetChanged();
             songListAdapter.notifyItemRangeChanged(0, songList.size() - 1);
@@ -260,8 +273,10 @@ public class SongListFragment extends Fragment implements
 
     @Override
     public void updateAdapterOnDoubleTap(float tempo, float range) {
-        isNew = true;
-        getTrackData(tempo, range);
+        if (!isNotSearching) {
+            isNew = true;
+            getTrackData(tempo, range);
+        }
     }
 
     public void setTokenFromMain(String token) {
@@ -289,6 +304,10 @@ public class SongListFragment extends Fragment implements
 
     public interface SetSongItemsToMain {
         void passSongItemsToMain(List<Item> listItem);
+    }
+
+    public interface SetIsSearching{
+        void setIsSearchingMain(boolean isSearching);
     }
 
     private void setUpOffsetMangerMaps() {
@@ -327,7 +346,6 @@ public class SongListFragment extends Fragment implements
                     }
 
                 }
-
 
             } else if(total%50 != 0){
                 //handle thee case where the total is under 50

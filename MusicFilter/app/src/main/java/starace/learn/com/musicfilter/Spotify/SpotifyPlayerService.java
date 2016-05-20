@@ -69,7 +69,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
             @Override
             public void onError(Throwable throwable) {
-
+                Log.d(TAG_PLAYER_SERVICE, "This is the player error " + throwable.getMessage());
             }
         });
 
@@ -110,7 +110,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
     @Override
     public void onPlaybackError(ErrorType errorType, String s) {
-
+        Log.d(TAG_PLAYER_SERVICE, "errorType " + errorType + " String " + s);
     }
 
     public void playSong (){
@@ -155,6 +155,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
             Log.d(TAG_PLAYER_SERVICE,"issetqueue is " + isSetQueue);
         }
         Log.d(TAG_PLAYER_SERVICE, "JumpTheQue has finished");
+
     }
 
     public void sendMessage(int pos){
@@ -163,5 +164,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         playerIntent.putExtra(BROADCAST_MESSAGE,pos);
         broadcaster.sendBroadcast(playerIntent);
     }
+
+
 
 }

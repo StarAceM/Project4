@@ -23,7 +23,7 @@
     </string-array>
 
     <string name="welcome_title">Welcome to BeatBot</string>
-    <string name="welcome_description">If you are a first time user check out the guide below</string>
+    <string name="welcome_description">If you are a first time user, check out the guide below</string>
 
     <string name="guide_nav_title">Navigation Drawer</string>
     <string name="guide_nav_description">Open the Navigation Drawer and select your desired genres</string>

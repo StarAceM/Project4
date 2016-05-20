@@ -28,7 +28,7 @@
             android:background="@drawable/ic_pause_black_24dp"/>
 
         <Button
-            android:id="@+id/stop_button"
+            android:id="@+id/skip_button"
             android:layout_width="50dp"
             android:layout_height="50dp"
             android:layout_gravity="center_vertical"

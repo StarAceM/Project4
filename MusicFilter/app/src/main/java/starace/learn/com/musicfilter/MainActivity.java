@@ -1,8 +1,10 @@
 package starace.learn.com.musicfilter;
 
+import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -10,6 +12,8 @@ import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v4.content.LocalBroadcastManager;
@@ -48,13 +52,15 @@ import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 
 public class MainActivity extends AppCompatActivity implements SongListAdapter.RecyclerClickEvent, NavigationFragment.NotificationPreferences,
         ConnectionStateCallback, SongListFragment.SetSongItemsToMain, SliderButtonListener.SetBPMRange,
-        SliderButtonListener.SetBPMValue{
+        SliderButtonListener.SetBPMValue, SongListFragment.SetIsSearching{
     private static final String TAG_MAIN = "MainActivity";
 
     public static String token;
     public static final String CLIENT_ID = "bb65fc78da534d8f801a5db0aaf6e422";
     private static final String REDIRECT_URI = "music-filter-app-callback://callback";
     private static final int REQUEST_CODE_SPOTIFY = 1337;
+    private static final int FAILED_LOGIN_CODE = 0;
+    private static final int CONNECTION_LOST_CODE = 0;
 
     public static final String KEY_SHARED_PREF_NOTIF = "NotificationPref";
     public static final String KEY_SHAREDPREF_FILE = "MainSharedPref";
@@ -73,24 +79,29 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private Intent spotifyPlayerIntent;
     public static final String KEY_SERVICE_TOKEN = "oAuthToken";
     public boolean isBound;
+    private boolean isConnected;
     private SpotifyPlayerService playerService;
     private List<Item> itemList;
     private Toolbar toolbar;
     private Button playButton;
     private Button pauseButton;
-    private Button stopButton;
+    private Button skipButton;
     private ImageView nowPlayingImage;
     private TextView nowPlayingTitle;
     private TextView nowPlayingArtist;
     private TextView nowPlayingBPM;
     private TextView bpmRange;
     private TextView bpmValue;
+    private ProgressBar searchProgress;
+    private boolean isSearching;
     private BroadcastReceiver receiver;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        isConnected=checkNetworkConnection();
+        initializeProgressBar();
         initializeToolbar();
         setUpBroadcastReceiver();
         setUpSpotifyLogin();
@@ -98,11 +109,31 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         setUpButtons();
         setButtonOnClickListener(playButton, 0);
         setButtonOnClickListener(pauseButton, 1);
-        setButtonOnClickListener(stopButton,2);
+        setButtonOnClickListener(skipButton, 2);
         setBPMViews();
         setUpNowPlayingViews();
         setSongListFragment();
 
+        if(!isConnected){
+            buildAlertDialog(FAILED_LOGIN_CODE);
+        }
+
+    }
+
+    private boolean checkNetworkConnection (){
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager)  this.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        return networkInfo != null && networkInfo.isConnected();
+    }
+
+    private void initializeProgressBar(){
+        searchProgress = (ProgressBar) findViewById(R.id.double_tap_progress);
+        isSearching = false;
+        if (searchProgress != null) {
+            searchProgress.setVisibility(View.INVISIBLE);
+        }
     }
 
     private void initializeToolbar(){
@@ -136,14 +167,43 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     private void setUpSpotifyLogin(){
+        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
+                AuthenticationResponse.Type.TOKEN,
+                REDIRECT_URI);
+        builder.setScopes(new String[]{"user-read-private", "streaming"});
+        AuthenticationRequest request = builder.build();
+        AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
 
-            AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
-                    AuthenticationResponse.Type.TOKEN,
-                    REDIRECT_URI);
-            builder.setScopes(new String[]{"user-read-private", "streaming"});
-            AuthenticationRequest request = builder.build();
-            AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
+    }
 
+    private void buildAlertDialog(int type){
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        switch (type){
+            case 0:
+                alertBuilder.setTitle("No Network Found");
+                alertBuilder.setMessage("No Network Found. Please Connect and Restart BeatBot");
+                alertBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                        dialog.cancel();
+                    }
+                });
+                break;
+            case 1:
+                alertBuilder.setTitle("Connection Lost");
+                alertBuilder.setMessage("");
+                alertBuilder.setPositiveButton("Retry", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        setUpSpotifyLogin();
+                        dialog.cancel();
+                    }
+                });
+        }
+
+        AlertDialog alert = alertBuilder.create();
+        alert.show();
     }
 
     private void bindSpotifyPlayerService(String token){
@@ -157,7 +217,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private void setUpButtons() {
         playButton = (Button) findViewById(R.id.play_button);
         pauseButton = (Button) findViewById(R.id.pause_button);
-        stopButton = (Button) findViewById(R.id.stop_button);
+        skipButton = (Button) findViewById(R.id.skip_button);
     }
 
     private void setUpNowPlayingViews() {
@@ -263,7 +323,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     @Override
     public void setRange(float range) {
-        bpmRange.setText("BPM Range: " + (int)range );
+        bpmRange.setText("BPM Range: " + (int) range);
     }
 
     @Override
@@ -384,7 +444,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        Log.d(TAG_MAIN,"On activity result is called");
+        Log.d(TAG_MAIN, "On activity result is called");
         if (requestCode == REQUEST_CODE_SPOTIFY) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
@@ -409,7 +469,6 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
             SpotifyPlayerService.SpotifyBinder spotifyBinder = (SpotifyPlayerService.SpotifyBinder) service;
             playerService = spotifyBinder.getService();
-
             isBound = true;
             Log.d(TAG_MAIN,"SERVICE IS CONNECTED");
         }
@@ -433,11 +492,13 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     @Override
     public void onLoginFailed(Throwable throwable) {
+        Log.d(TAG_MAIN, "onLoginFailed has been called");
 
     }
 
     @Override
     public void onTemporaryError() {
+        Log.d(TAG_MAIN, "onTemporaryError has been called ");
 
     }
 
@@ -462,7 +523,6 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     public void passSongItemsToMain(List<Item> listItem) {
         itemList = listItem;
-        itemList.add((Item)listItem.get(0));
         Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
         if (listItem.size() > 0) {
             Log.d(TAG_MAIN, "PassSongItems to main has been calls");
@@ -475,13 +535,27 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     @Override
+    public void setIsSearchingMain(boolean isNotSearching) {
+        this.isSearching = !isNotSearching;
+        if (isSearching) {
+            searchProgress.setVisibility(View.VISIBLE);
+        } else {
+            searchProgress.setVisibility(View.INVISIBLE);
+        }
+        playButton.setEnabled(isNotSearching);
+        pauseButton.setEnabled(isNotSearching);
+        skipButton.setEnabled(isNotSearching);
+
+    }
+
+    @Override
     public void handleRecyclerClickEvent(int pos) {
         playerService.jumpTheQueue(pos);
         Log.d(TAG_MAIN, "jumpTheQueue has been called");
     }
 
     private void updateNowPlayingViews(int pos){
-        if (itemList != null) {
+        if (itemList != null && isConnected) {
             if (itemList.size() > pos && !itemList.get(0).getId().equals("isFake")) {
                 nowPlayingArtist.setText(itemList.get(pos).getArtists()[0].getName());
                 Log.d(TAG_MAIN, "This is the artist name " + itemList.get(pos).getArtists()[0].getName());
@@ -505,8 +579,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         editor.putString(KEY_SHARED_PREF_NOTIF, notificationPreferences);
         editor.apply();
 
-        this.unbindService(spotifyServiceConnection);
-
+        if(isBound) {
+            this.unbindService(spotifyServiceConnection);
+        }
         super.onDestroy();
     }
 
