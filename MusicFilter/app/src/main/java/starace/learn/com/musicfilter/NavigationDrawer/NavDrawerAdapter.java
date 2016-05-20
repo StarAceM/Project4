@@ -13,6 +13,10 @@ import android.widget.TextView;
 import java.util.ArrayList;
 import java.util.List;
 
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationEntry;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationDivider;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationItem;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationToggle;
 import starace.learn.com.musicfilter.R;
 
 /**
@@ -20,11 +24,11 @@ import starace.learn.com.musicfilter.R;
  */
 public class NavDrawerAdapter extends RecyclerView.Adapter{
     private static final String TAG_NAV_ADAPTER = "NavigationAdapter";
-    private List<NaviagtionEntry> data;
+    private List<NavigationEntry> data;
     private LayoutInflater inflater;
     private ArrayList<Boolean> isCheckedArray = new ArrayList<>();
 
-    public NavDrawerAdapter(Context context, List<NaviagtionEntry> data, ArrayList<Boolean> isCheckedArray) {
+    public NavDrawerAdapter(Context context, List<NavigationEntry> data, ArrayList<Boolean> isCheckedArray) {
         this.data = data;
         this.isCheckedArray = isCheckedArray;
         Log.d(TAG_NAV_ADAPTER, "DATA IS : " + data.size());
@@ -67,7 +71,7 @@ public class NavDrawerAdapter extends RecyclerView.Adapter{
      */
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, final int position) {
-        final NaviagtionEntry item = data.get(position);
+        final NavigationEntry item = data.get(position);
         Log.d(TAG_NAV_ADAPTER,"THIS IS THE ON BINDVIEWHOLDER position " + position );
 
 

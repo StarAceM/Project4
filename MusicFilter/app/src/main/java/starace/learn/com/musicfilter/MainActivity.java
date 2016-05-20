@@ -1,19 +1,28 @@
 package starace.learn.com.musicfilter;
 
+import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.graphics.Color;
 import android.graphics.Point;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.os.IBinder;
+import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Display;
+import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -32,10 +41,10 @@ import com.spotify.sdk.android.player.ConnectionStateCallback;
 import java.util.ArrayList;
 import java.util.List;
 
-import starace.learn.com.musicfilter.NavigationDrawer.NaviagtionEntry;
-import starace.learn.com.musicfilter.NavigationDrawer.NavigationDivider;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationDivider;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationEntry;
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationToggle;
 import starace.learn.com.musicfilter.NavigationDrawer.NavigationFragment;
-import starace.learn.com.musicfilter.NavigationDrawer.NavigationToggle;
 import starace.learn.com.musicfilter.Song.SongListAdapter;
 import starace.learn.com.musicfilter.Song.SongListFragment;
 import starace.learn.com.musicfilter.Spotify.Models.Item;
@@ -43,13 +52,15 @@ import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 
 public class MainActivity extends AppCompatActivity implements SongListAdapter.RecyclerClickEvent, NavigationFragment.NotificationPreferences,
         ConnectionStateCallback, SongListFragment.SetSongItemsToMain, SliderButtonListener.SetBPMRange,
-        SliderButtonListener.SetBPMValue{
+        SliderButtonListener.SetBPMValue, SongListFragment.SetIsSearching{
     private static final String TAG_MAIN = "MainActivity";
 
     public static String token;
     public static final String CLIENT_ID = "bb65fc78da534d8f801a5db0aaf6e422";
     private static final String REDIRECT_URI = "music-filter-app-callback://callback";
     private static final int REQUEST_CODE_SPOTIFY = 1337;
+    private static final int FAILED_LOGIN_CODE = 0;
+    private static final int CONNECTION_LOST_CODE = 0;
 
     public static final String KEY_SHARED_PREF_NOTIF = "NotificationPref";
     public static final String KEY_SHAREDPREF_FILE = "MainSharedPref";
@@ -68,52 +79,131 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private Intent spotifyPlayerIntent;
     public static final String KEY_SERVICE_TOKEN = "oAuthToken";
     public boolean isBound;
+    private boolean isConnected;
     private SpotifyPlayerService playerService;
     private List<Item> itemList;
+    private Toolbar toolbar;
     private Button playButton;
     private Button pauseButton;
-    private Button stopButton;
+    private Button skipButton;
     private ImageView nowPlayingImage;
     private TextView nowPlayingTitle;
     private TextView nowPlayingArtist;
+    private TextView nowPlayingBPM;
     private TextView bpmRange;
     private TextView bpmValue;
-    private Boolean isFrist;
+    private ProgressBar searchProgress;
+    private boolean isSearching;
+    private BroadcastReceiver receiver;
 
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        isFrist = true;
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
-        setSupportActionBar(toolbar);
-        toolbar.setTitle("");
-
+        isConnected=checkNetworkConnection();
+        initializeProgressBar();
+        initializeToolbar();
+        setUpBroadcastReceiver();
         setUpSpotifyLogin();
         getSharedPreferencesSlider();
-
         setUpButtons();
         setButtonOnClickListener(playButton, 0);
         setButtonOnClickListener(pauseButton, 1);
-        setButtonOnClickListener(stopButton,2);
-
+        setButtonOnClickListener(skipButton, 2);
         setBPMViews();
-
         setUpNowPlayingViews();
-
         setSongListFragment();
+
+        if(!isConnected){
+            buildAlertDialog(FAILED_LOGIN_CODE);
+        }
+
+    }
+
+    private boolean checkNetworkConnection (){
+        ConnectivityManager connectivityManager =
+                (ConnectivityManager)  this.getSystemService(Context.CONNECTIVITY_SERVICE);
+
+        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
+        return networkInfo != null && networkInfo.isConnected();
+    }
+
+    private void initializeProgressBar(){
+        searchProgress = (ProgressBar) findViewById(R.id.double_tap_progress);
+        isSearching = false;
+        if (searchProgress != null) {
+            searchProgress.setVisibility(View.INVISIBLE);
+        }
+    }
+
+    private void initializeToolbar(){
+        toolbar = (Toolbar) findViewById(R.id.toolbar_main);
+        setSupportActionBar(toolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayShowCustomEnabled(true);
+            getSupportActionBar().setDisplayOptions(android.support.v7.app.ActionBar.DISPLAY_SHOW_CUSTOM);
+            getSupportActionBar().setCustomView(getLayoutInflater().inflate(R.layout.toolbar, null),
+                    new ActionBar.LayoutParams(
+                            ActionBar.LayoutParams.WRAP_CONTENT,
+                            ActionBar.LayoutParams.MATCH_PARENT,
+                            Gravity.CENTER
+                    )
+            );
+
+            toolbar.setTitleTextColor(getResources().getColor(R.color.colorAccent, null));
+        }
+    }
+
+    private void setUpBroadcastReceiver(){
+        receiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int pos = intent.getIntExtra(SpotifyPlayerService.BROADCAST_MESSAGE,-1);
+                updateNowPlayingViews(pos);
+                Log.d(TAG_MAIN,"SpotifyPlayerService has been received");
+            }
+        };
 
     }
 
     private void setUpSpotifyLogin(){
+        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
+                AuthenticationResponse.Type.TOKEN,
+                REDIRECT_URI);
+        builder.setScopes(new String[]{"user-read-private", "streaming"});
+        AuthenticationRequest request = builder.build();
+        AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
 
-            AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
-                    AuthenticationResponse.Type.TOKEN,
-                    REDIRECT_URI);
-            builder.setScopes(new String[]{"user-read-private", "streaming"});
-            AuthenticationRequest request = builder.build();
-            AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
+    }
 
+    private void buildAlertDialog(int type){
+        AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
+        switch (type){
+            case 0:
+                alertBuilder.setTitle("No Network Found");
+                alertBuilder.setMessage("No Network Found. Please Connect and Restart BeatBot");
+                alertBuilder.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        finish();
+                        dialog.cancel();
+                    }
+                });
+                break;
+            case 1:
+                alertBuilder.setTitle("Connection Lost");
+                alertBuilder.setMessage("");
+                alertBuilder.setPositiveButton("Retry", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        setUpSpotifyLogin();
+                        dialog.cancel();
+                    }
+                });
+        }
+
+        AlertDialog alert = alertBuilder.create();
+        alert.show();
     }
 
     private void bindSpotifyPlayerService(String token){
@@ -127,13 +217,14 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private void setUpButtons() {
         playButton = (Button) findViewById(R.id.play_button);
         pauseButton = (Button) findViewById(R.id.pause_button);
-        stopButton = (Button) findViewById(R.id.stop_button);
+        skipButton = (Button) findViewById(R.id.skip_button);
     }
 
     private void setUpNowPlayingViews() {
         nowPlayingImage = (ImageView) findViewById(R.id.song_image);
         nowPlayingTitle = (TextView) findViewById(R.id.song_title);
         nowPlayingArtist = (TextView) findViewById(R.id.song_detail);
+        nowPlayingBPM = (TextView) findViewById(R.id.song_bpm);
     }
 
     private void setBPMViews(){
@@ -147,7 +238,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
         float position = leftMargin + (width/2);
         bpmValue.setText("BPM Value: " +(int)(60.0f + ((position - 200.0f)/4.86f)));
-        bpmRange.setText("BPM Range: " +(int)(5.0f +((width - 400.0f)/5.44f)));
+        bpmRange.setText("BPM Range: " + (int) (5.0f + ((width - 400.0f) / 5.44f)));
     }
 
     private void setButtonOnClickListener(Button button,final int type){
@@ -232,12 +323,12 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     @Override
     public void setRange(float range) {
-        bpmRange.setText("BPM Range: " + (int)range );
+        bpmRange.setText("BPM Range: " + (int) range);
     }
 
     @Override
     public void setBPMValue(float value) {
-        bpmValue.setText("BPM Value: " + (int)value);
+        bpmValue.setText("BPM Value: " + (int) value);
     }
 
     public static void setSliderColor(Double progressRatio, ProgressBar sliderBar){
@@ -299,15 +390,14 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
      * @param isCheckedArray
      */
     private void setNavigationDrawer(ArrayList<Boolean> isCheckedArray) {
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar_main);
-        setSupportActionBar(toolbar);
+
         if (getSupportActionBar()!= null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         } else {
             Log.d(TAG_MAIN, "SUPPORT ACTION BAR IS NULL");
         }
         String[] navResourceArray = getResources().getStringArray(R.array.genre);
-        List<NaviagtionEntry> drawerEntries = new ArrayList<>();
+        List<NavigationEntry> drawerEntries = new ArrayList<>();
 
         drawerEntries.add(new NavigationDivider());
 
@@ -319,7 +409,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 .findFragmentById(R.id.fragment_navigation_drawer);
 
         drawerFragment.initDrawer((android.support.v4.widget.DrawerLayout) findViewById(R.id.drawer_layout_main),
-                toolbar, drawerEntries,isCheckedArray);
+                toolbar, drawerEntries, isCheckedArray);
         Log.d(TAG_MAIN, "THE initDrawer HAS BEEN CALLED ON MAIN");
     }
 
@@ -354,7 +444,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
-        Log.d(TAG_MAIN,"On activity result is called");
+        Log.d(TAG_MAIN, "On activity result is called");
         if (requestCode == REQUEST_CODE_SPOTIFY) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
@@ -402,11 +492,13 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     @Override
     public void onLoginFailed(Throwable throwable) {
+        Log.d(TAG_MAIN, "onLoginFailed has been called");
 
     }
 
     @Override
     public void onTemporaryError() {
+        Log.d(TAG_MAIN, "onTemporaryError has been called ");
 
     }
 
@@ -416,9 +508,16 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     }
 
     @Override
+    protected void onStart() {
+        super.onStart();
+        LocalBroadcastManager.getInstance(this).registerReceiver(receiver,
+                new IntentFilter(SpotifyPlayerService.BROADCAST_INTENT));
+    }
+
+    @Override
     protected void onStop() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
         super.onStop();
-        //ToDo need to save desired info to database here to restore views upon resume
     }
 
     @Override
@@ -426,24 +525,37 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         itemList = listItem;
         Log.d(TAG_MAIN, "This is the list Item size " + listItem.size());
         if (listItem.size() > 0) {
-            playerService.setQueue(listItem,isFrist);
-            updateNowPlayingViews(0);
-            isFrist = false;
-        } else {
-            Toast.makeText(this,"Your Filter Didn't Any Results. Adjust Your Filter and Try Again",Toast.LENGTH_LONG).show();
+            Log.d(TAG_MAIN, "PassSongItems to main has been calls");
+            playerService.setQueue(listItem);
+        } else if (listItem.size() < 1){
+            Toast.makeText(this,"Your Filter Didn't Return Any Results. Adjust Your Filter and Try Again",
+                    Toast.LENGTH_SHORT).show();
         }
+
+    }
+
+    @Override
+    public void setIsSearchingMain(boolean isNotSearching) {
+        this.isSearching = !isNotSearching;
+        if (isSearching) {
+            searchProgress.setVisibility(View.VISIBLE);
+        } else {
+            searchProgress.setVisibility(View.INVISIBLE);
+        }
+        playButton.setEnabled(isNotSearching);
+        pauseButton.setEnabled(isNotSearching);
+        skipButton.setEnabled(isNotSearching);
+
     }
 
     @Override
     public void handleRecyclerClickEvent(int pos) {
         playerService.jumpTheQueue(pos);
-        updateNowPlayingViews(pos);
         Log.d(TAG_MAIN, "jumpTheQueue has been called");
-        //set view here
     }
 
     private void updateNowPlayingViews(int pos){
-        if (itemList != null) {
+        if (itemList != null && isConnected) {
             if (itemList.size() > pos && !itemList.get(0).getId().equals("isFake")) {
                 nowPlayingArtist.setText(itemList.get(pos).getArtists()[0].getName());
                 Log.d(TAG_MAIN, "This is the artist name " + itemList.get(pos).getArtists()[0].getName());
@@ -451,6 +563,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 Log.d(TAG_MAIN, "This is the image url " + itemList.get(pos).getAlbum().getImages()[0].getImageURL());
                 Glide.with(this).load(itemList.get(pos).getAlbum().getImages()[0].getImageURL())
                         .into(nowPlayingImage);
+                nowPlayingBPM.setText("BPM: " + itemList.get(pos).getTempo());
             }
             Log.d(TAG_MAIN, "updateNowPlayingViews is finished");
         }
@@ -466,8 +579,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         editor.putString(KEY_SHARED_PREF_NOTIF, notificationPreferences);
         editor.apply();
 
-        this.unbindService(spotifyServiceConnection);
-
+        if(isBound) {
+            this.unbindService(spotifyServiceConnection);
+        }
         super.onDestroy();
     }
 

@@ -9,5 +9,7 @@
     <color name="colorToggleOn">#1e5c05</color>
     <color name="colorNavDrawerBackground">#939393</color>
     <color name="colorPlayedListBackground">#939393</color>
+    <color name="colorTitle">#cbcfcf</color>
+    <color name="colorDescription">#939393</color>
 
 </resources>

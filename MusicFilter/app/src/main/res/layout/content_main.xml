@@ -2,34 +2,57 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
-    android:layout_height="match_parent" xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_height="match_parent"
+    android:background="@color/colorAccent"
     tools:context="starace.learn.com.musicfilter.MainActivity">
 
-    <fragment class="starace.learn.com.musicfilter.Song.SongListFragment"
-        android:id="@+id/fragment_song_list"
+    <FrameLayout
+        android:id="@+id/frame_fragment_progressbar"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_gravity="start"
-        tools:layout="@layout/song_list_fragment_main" />
+        android:layout_height="wrap_content">
+
+        <fragment class="starace.learn.com.musicfilter.Song.SongListFragment"
+            android:id="@+id/fragment_song_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start"
+            android:layout_marginTop="5dp"
+            tools:layout="@layout/song_list_fragment_main" />
+
+        <ProgressBar
+            android:id="@+id/double_tap_progress"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:visibility="invisible"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            style="@android:style/Widget.ProgressBar"
+            />
+
+
+    </FrameLayout>
+
+
 
     <fragment class="starace.learn.com.musicfilter.Song.SongListFragment"
         android:id="@+id/fragment_song_list_played"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_gravity="start"
-        android:layout_below="@+id/fragment_song_list"
+        android:layout_below="@+id/frame_fragment_progressbar"
         tools:layout="@layout/song_list_fragment_main" />
 
     <include layout="@layout/now_playing"
         android:id="@+id/now_playing_layout"
         android:layout_width="match_parent"
-        android:layout_height="125dp"
+        android:layout_height="wrap_content"
         android:layout_below="@+id/fragment_song_list_played"/>
 
     <include layout="@layout/player_control"
         android:id="@+id/player_control_layout"
         android:layout_width="match_parent"
-        android:layout_height="60dp"
+        android:layout_height="wrap_content"
         android:layout_below="@+id/now_playing_layout"
         android:layout_above="@+id/frame_layout_slider"
         />
@@ -39,7 +62,8 @@
         android:layout_width="match_parent"
         android:layout_height="45dp"
         android:layout_alignParentBottom="true"
-        android:layout_marginBottom="10dp">
+        android:layout_marginBottom="10dp"
+        android:layout_marginTop="10dp">
         <ProgressBar
             android:id="@+id/progress_bar_slider"
             style = "@android:style/Widget.ProgressBar.Horizontal"

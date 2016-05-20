@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import java.util.ArrayList;
 import java.util.List;
 
+import starace.learn.com.musicfilter.NavigationDrawer.Models.NavigationEntry;
 import starace.learn.com.musicfilter.R;
 
 /**
@@ -66,7 +67,7 @@ public class NavigationFragment extends Fragment{
      * @param navDrawerEntryList
      * @param booleanArrayList
      */
-    public void initDrawer(DrawerLayout drawerLayout, final Toolbar toolbar, List<NaviagtionEntry> navDrawerEntryList,
+    public void initDrawer(DrawerLayout drawerLayout, final Toolbar toolbar, List<NavigationEntry> navDrawerEntryList,
                            ArrayList<Boolean> booleanArrayList){
         Log.d(TAG_NAV_FRAG,"initDrawer HAS BEEN CALLED IN THE NAVIGATION FRAGMENT");
         navDrawerLayout = drawerLayout;
