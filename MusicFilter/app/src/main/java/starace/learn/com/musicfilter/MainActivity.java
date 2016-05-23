@@ -53,14 +53,13 @@ import starace.learn.com.musicfilter.Spotify.SpotifyPlayerService;
 public class MainActivity extends AppCompatActivity implements SongListAdapter.RecyclerClickEvent, NavigationFragment.NotificationPreferences,
         ConnectionStateCallback, SongListFragment.SetSongItemsToMain, SliderButtonListener.SetBPMRange,
         SliderButtonListener.SetBPMValue, SongListFragment.SetIsSearching{
-    private static final String TAG_MAIN = "MainActivity";
 
+    private static final String TAG_MAIN = "MainActivity";
     public static String token;
     public static final String CLIENT_ID = "bb65fc78da534d8f801a5db0aaf6e422";
     private static final String REDIRECT_URI = "music-filter-app-callback://callback";
     private static final int REQUEST_CODE_SPOTIFY = 1337;
     private static final int FAILED_LOGIN_CODE = 0;
-    private static final int CONNECTION_LOST_CODE = 0;
 
     public static final String KEY_SHARED_PREF_NOTIF = "NotificationPref";
     public static final String KEY_SHAREDPREF_FILE = "MainSharedPref";
@@ -71,12 +70,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     private static final int height = 150;
     public int width;
     private int leftMargin;
+    private String notificationPreferences;
     private SongListFragment songListFragment;
     private SliderButtonListener sliderButtonListener;
 
-    private String notificationPreferences;
-
-    private Intent spotifyPlayerIntent;
     public static final String KEY_SERVICE_TOKEN = "oAuthToken";
     public boolean isBound;
     private boolean isConnected;
@@ -120,6 +117,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * checks for a network connection and returns a boolean
+     * @return
+     */
     private boolean checkNetworkConnection (){
         ConnectivityManager connectivityManager =
                 (ConnectivityManager)  this.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -128,6 +129,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         return networkInfo != null && networkInfo.isConnected();
     }
 
+    /**
+     * sets the search progress bar to invisible and the the initial state of the
+     * isSearching boolean to false
+     */
     private void initializeProgressBar(){
         searchProgress = (ProgressBar) findViewById(R.id.double_tap_progress);
         isSearching = false;
@@ -136,6 +141,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         }
     }
 
+    /**
+     * initializes the toolbar with a custom view
+     */
     private void initializeToolbar(){
         toolbar = (Toolbar) findViewById(R.id.toolbar_main);
         setSupportActionBar(toolbar);
@@ -150,10 +158,14 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                     )
             );
 
-            toolbar.setTitleTextColor(getResources().getColor(R.color.colorAccent, null));
+            toolbar.setTitleTextColor(getResources().getColor(R.color.colorAccent));
         }
     }
 
+    /**
+     * sets up a broadcast reciever that is used to send messages from the
+     * SpotifyPlayerService to the MainActivity
+     */
     private void setUpBroadcastReceiver(){
         receiver = new BroadcastReceiver() {
             @Override
@@ -166,6 +178,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * starts the spotify sdk login process. the result is returned in onActivityResult
+     */
     private void setUpSpotifyLogin(){
         AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
                 AuthenticationResponse.Type.TOKEN,
@@ -176,6 +191,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * builds the alert dialog used when no network is found during the login process
+     * @param type
+     */
     private void buildAlertDialog(int type){
         AlertDialog.Builder alertBuilder = new AlertDialog.Builder(this);
         switch (type){
@@ -206,20 +225,31 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         alert.show();
     }
 
+    /**
+     * binds the SpotifyPlayerService passes the token aquired from login process
+     * called from onActivityResult
+     * @param token
+     */
     private void bindSpotifyPlayerService(String token){
         Log.d(TAG_MAIN, "Logged in? " + token);
         songListFragment = new SongListFragment();
-        spotifyPlayerIntent = new Intent(this,SpotifyPlayerService.class);
+        Intent spotifyPlayerIntent = new Intent(this,SpotifyPlayerService.class);
         spotifyPlayerIntent.putExtra(KEY_SERVICE_TOKEN,token);
         this.bindService(spotifyPlayerIntent, spotifyServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
+    /**
+     * initializes the player buttons
+     */
     private void setUpButtons() {
         playButton = (Button) findViewById(R.id.play_button);
         pauseButton = (Button) findViewById(R.id.pause_button);
         skipButton = (Button) findViewById(R.id.skip_button);
     }
 
+    /**
+     * initializes the nowPlaying views
+     */
     private void setUpNowPlayingViews() {
         nowPlayingImage = (ImageView) findViewById(R.id.song_image);
         nowPlayingTitle = (TextView) findViewById(R.id.song_title);
@@ -227,6 +257,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         nowPlayingBPM = (TextView) findViewById(R.id.song_bpm);
     }
 
+    /**
+     * initalizes the txt views of the player layout
+     */
     private void setBPMViews(){
         bpmRange = (TextView) findViewById(R.id.bpm_range);
         bpmValue = (TextView) findViewById(R.id.bpm_setting);
@@ -234,6 +267,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         setInitialBPMValues();
     }
 
+    /**
+     * uses the value of the left margin of the slider button to set initial
+     * bpm values from shared preferences
+     */
     private void setInitialBPMValues(){
 
         float position = leftMargin + (width/2);
@@ -241,6 +278,11 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         bpmRange.setText("BPM Range: " + (int) (5.0f + ((width - 400.0f) / 5.44f)));
     }
 
+    /**
+     * Recieves a button and uses its type to set onClickListener functionality
+     * @param button
+     * @param type
+     */
     private void setButtonOnClickListener(Button button,final int type){
         button.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -262,6 +304,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         });
     }
 
+    /**
+     * get the slider information from shared preferences
+     */
     private void getSharedPreferencesSlider(){
 
         SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
@@ -269,11 +314,17 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         setNavigationDrawer(createBoolArrayList(notificationFromSharedPref));
 
         int sliderRatio = sharedPreferences.getInt(KEY_SLIDER_RATIO, KEY_DEFAULT_INT);
-        int buttonWidth = sharedPreferences.getInt(KEY_BUTTON_WIDTH,KEY_DEFAULT_INT);
+        int buttonWidth = sharedPreferences.getInt(KEY_BUTTON_WIDTH, KEY_DEFAULT_INT);
         setUpSlider(sliderRatio, buttonWidth);
 
     }
 
+    /**
+     * sets up the slider button which includes the progress bar behind it
+     * sets the size, position, and color of the slider
+     * @param sliderRatio
+     * @param buttonWidth
+     */
     private void setUpSlider(int sliderRatio,int buttonWidth){
         Button sliderButton = (Button) findViewById(R.id.slider_button);
         ProgressBar sliderBar = (ProgressBar) findViewById(R.id.progress_bar_slider);
@@ -292,25 +343,38 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
             width = 400;
             leftMargin = (size.x / 2) - (width / 2);
             layoutParams.leftMargin = leftMargin;
-            sliderBar.setProgress(50);
-            sliderBar.setProgressTintList(ColorStateList.valueOf(Color.rgb(103, 11, 119)));
+            if (sliderBar != null) {
+                sliderBar.setProgress(50);
+                sliderBar.setProgressTintList(ColorStateList.valueOf(Color.rgb(103, 11, 119)));
+            }
         } else {
             double sliderPercent = (double) sliderRatio / 100.0;
             Double sliderLeftMarginDouble = sliderPercent * (double) size.x;
             leftMargin = sliderLeftMarginDouble.intValue() - (width/2);
             layoutParams.leftMargin = leftMargin;
-            setSliderColor(sliderPercent, sliderBar);
-            sliderBar.setProgress(sliderRatio);
+            if (sliderBar != null) {
+                setSliderColor(sliderPercent, sliderBar);
+                sliderBar.setProgress(sliderRatio);
+            }
             Log.d(TAG_MAIN, "This is the progress ratio used to set color " + sliderPercent);
         }
 
-        sliderButton.setLayoutParams(layoutParams);
+        if (sliderButton != null) {
+            sliderButton.setLayoutParams(layoutParams);
+            sliderButtonListener = new SliderButtonListener(this, null, root, sliderBar);
+            sliderButton.setOnTouchListener(sliderButtonListener);
+        }
 
-        sliderButtonListener = new SliderButtonListener(this,null,root, sliderBar);
-        sliderButton.setOnTouchListener(sliderButtonListener);
 
     }
 
+    /**
+     * a public method that is called from the SliderButtonListener to update the position and
+     * color of the sliderbutton
+     * @param button
+     * @param root
+     * @param sliderBar
+     */
     public static void setSliderProgress (View button, View root, ProgressBar sliderBar) {
         double left = button.getLeft() + (button.getWidth()/2);
         double total = root.getWidth();
@@ -321,16 +385,32 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         sliderBar.setProgress(dProgress.intValue());
     }
 
+    /**
+     * interface used in the SliderButton listener to set the bpm range values in the
+     * nowPlaying layout
+     * @param range
+     */
     @Override
     public void setRange(float range) {
         bpmRange.setText("BPM Range: " + (int) range);
     }
 
+    /**
+     * interface used in the SliderButton listener to set the bpm value in the
+     * nowPlaying layout
+     * @param value
+     */
     @Override
     public void setBPMValue(float value) {
         bpmValue.setText("BPM Value: " + (int) value);
     }
 
+    /**
+     * sets the color of the slider progress bar based on a percentage of the total
+     * possible value
+     * @param progressRatio
+     * @param sliderBar
+     */
     public static void setSliderColor(Double progressRatio, ProgressBar sliderBar){
         Double red = 3.0;
         Double green = 17.0;
@@ -343,9 +423,16 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         sliderBar.setProgressTintList(ColorStateList.valueOf(Color.rgb(red.intValue(), green.intValue(), blue.intValue())));
     }
 
-    public static int setButtonWidth(Point size, int buttonWidth, int defaultInt){
-        int newWidth = 0;
-        int portraitWidth = 0;
+    /**
+     * called from setUpSliderButton sets the current width of the slider button
+     * @param size
+     * @param buttonWidth
+     * @param defaultInt
+     * @return
+     */
+    private static int setButtonWidth(Point size, int buttonWidth, int defaultInt){
+        int newWidth;
+        int portraitWidth;
 
         if(size.x > size.y){
             portraitWidth = size.y;
@@ -429,7 +516,11 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         Log.i(TAG_MAIN, "setNotificationPreferences: " + notificationPreferences);
     }
 
-    public void setSongListFragment() {
+    /**
+     * sets two songListFragments which are distinguished by a boolean passed to the songListFragment via
+     * initSongRecyclerView method
+     */
+    private void setSongListFragment() {
         Log.d(TAG_MAIN,"setSongListFragment is called, token is " + token);
         songListFragment = (SongListFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.fragment_song_list);
@@ -441,6 +532,13 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * onActivityResult receives the result of the SpotfyLogin request and then calls
+     * bindSpotifyPlayerService to bind the service with the token returned
+     * @param requestCode
+     * @param resultCode
+     * @param intent
+     */
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
@@ -465,6 +563,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 //        }
     }
 
+    /**
+     * sets up the service connection when the service is bound receives IBinder and
+     * gets and instance of the service from it
+     */
     protected ServiceConnection spotifyServiceConnection = new ServiceConnection() {
 
         @Override
@@ -483,6 +585,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         }
     };
 
+    /**
+     * call back methods for the SpotifyLogin interface
+     */
     @Override
     public void onLoggedIn() {
 
@@ -510,6 +615,9 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * onStart is used to set up the LocalBroadcastManger and register the receiver
+     */
     @Override
     protected void onStart() {
         super.onStart();
@@ -517,12 +625,20 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 new IntentFilter(SpotifyPlayerService.BROADCAST_INTENT));
     }
 
+    /**
+     * onStop used to unregister the receiver from the LocalBroadcastManager
+     */
     @Override
     protected void onStop() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(receiver);
         super.onStop();
     }
 
+    /**
+     * interface from the songListFragment to pass the list of song Item to the MainActivity
+     * the list of items is used to Call setQueue in the SpotifyPlayerService
+     * @param listItem
+     */
     @Override
     public void passSongItemsToMain(List<Item> listItem) {
         itemList = listItem;
@@ -537,6 +653,11 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * interface from the songListFragment to notify the MainActivity that a search has
+     * started or stoped
+     * @param isNotSearching
+     */
     @Override
     public void setIsSearchingMain(boolean isNotSearching) {
         this.isSearching = !isNotSearching;
@@ -551,12 +672,21 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
     }
 
+    /**
+     * interface from SongListFragment to call a method in the SpotifyPlayerService
+     * to play song clicked in the recycler view
+     * @param pos
+     */
     @Override
     public void handleRecyclerClickEvent(int pos) {
         playerService.jumpTheQueue(pos);
         Log.d(TAG_MAIN, "jumpTheQueue has been called");
     }
 
+    /**
+     * method updates the views in the nowPLaying layout
+     * @param pos
+     */
     private void updateNowPlayingViews(int pos){
         if (itemList != null && isConnected) {
             if (itemList.size() > pos && !itemList.get(0).getId().equals("isFake")) {
