@@ -59,7 +59,6 @@ public class SongListFragment extends Fragment implements
     private Map<String, List<Integer>> offsetLimitMap;
     private List<String> genreListString;
 
-
     /**
      * inflates the fragment view
      * @param inflater
