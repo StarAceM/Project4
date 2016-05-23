@@ -445,8 +445,11 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     protected void onActivityResult(int requestCode, int resultCode, Intent intent) {
         super.onActivityResult(requestCode, resultCode, intent);
         Log.d(TAG_MAIN, "On activity result is called");
-        if (requestCode == REQUEST_CODE_SPOTIFY) {
+
+//        if (requestCode == REQUEST_CODE_SPOTIFY) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
+        Log.d(TAG_MAIN,"Response token " + response.getAccessToken());
+        Log.d(TAG_MAIN,"Response error " + response.getError());
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
 
                 SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
@@ -459,7 +462,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 bindSpotifyPlayerService(response.getAccessToken());
 
             }
-        }
+//        }
     }
 
     protected ServiceConnection spotifyServiceConnection = new ServiceConnection() {
