@@ -33,6 +33,13 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
     private int width;
     private int curLeftMargin;
 
+    /**
+     * slider button listener constructor
+     * @param context
+     * @param attrs
+     * @param root
+     * @param sliderBar
+     */
     public SliderButtonListener(Context context, AttributeSet attrs, ViewGroup root, ProgressBar sliderBar) {
         super(context, attrs);
         this.root = root;
@@ -42,6 +49,16 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         doubleTapDetector = new GestureDetectorCompat(context,new DoubleTapDetector());
     }
 
+    /**
+     * onTouch method handles all the touch events
+     * scaleGestureDetector handles all events that scale the button
+     * doubleTapDetector handles the double tap events
+     * the switch(action) handles the moving and updating of the button state in realtime
+     * using public methods of the MainActivity
+     * @param view
+     * @param event
+     * @return
+     */
     public boolean onTouch(View view, MotionEvent event) {
         buttonView = view;
         width = buttonView.getWidth();
@@ -115,7 +132,10 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
             return true;
     }
 
-
+    /**
+     * ScaleListener takes in a touch event and determines if it is a scale event then
+     * calculates the change and updates the size in realtime
+     */
     private class ScaleListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
 
         @Override
@@ -134,6 +154,9 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         }
     }
 
+    /**
+     * Catches the double tap event starts a search using the current range and tempo settings
+     */
     private class DoubleTapDetector extends GestureDetector.SimpleOnGestureListener {
 
         @Override
@@ -149,6 +172,10 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         }
     }
 
+    /**
+     * sets the button size based on input from the scaleGestureDetector
+     * @param spanX
+     */
     private void setButtonSize(float spanX){
         int curWidth = buttonView.getWidth();
         int curLeftMargin = buttonView.getLeft();
@@ -175,6 +202,13 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
     }
 
+    /**
+     * Determines if the current touch had occurred in the area of the slider button
+     * @param view
+     * @param x
+     * @param y
+     * @return
+     */
     private boolean checkTouchLocation(View view, int x, int y) {
         Rect outRect = new Rect();
         int[] location = new int[2];
@@ -186,15 +220,26 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
     }
 
+    /**
+     * interface to send temp and range from the listener to the SongListFragment
+     */
     public interface UpdateAdapterOnDoubleTap{
        void updateAdapterOnDoubleTap(float tempo, float range);
     }
 
+    /**
+     * used to pass the correct fragment to the SliderButtonListener
+     * @param songListFragment
+     */
     public void setFragmentToListener(SongListFragment songListFragment){
         Log.d(TAG_LISTENER, "The Fragment has been passed to the SliderButtonListener");
         this.songListFragment = songListFragment;
     }
 
+    /**
+     * calculates the tempo from with and leftMargin
+     * @return
+     */
     private float calcTempo(){
         float flWidth = this.width;
         float flLeftMargin = this.curLeftMargin;
@@ -204,6 +249,10 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
         return 60.0f + ((position - 200.0f)/4.86f);
     }
 
+    /**
+     * calculate the range from the button width
+     * @return
+     */
     private float calcRange(){
         float flWidth = this.width;
 
@@ -211,14 +260,25 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
 
     }
 
+    /**
+     * sends the bpm range to the main activity to update
+     * nowPlaying layout
+     */
     public interface SetBPMRange{
         void setRange(float range);
     }
 
+    /**
+     * sends the bpm value to the main activity to update
+     * nowPlaying Layout
+     */
     public interface SetBPMValue{
         void setBPMValue(float value);
     }
 
+    /**
+     * method to trigger the sending of bpm values to MainActivity
+     */
     public void setBPMValueForMain() {
         SetBPMValue setBPMValue = (SetBPMValue) context;
         setBPMValue.setBPMValue(calcTempo());

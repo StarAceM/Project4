@@ -19,6 +19,11 @@ public class GetStarterData {
         this.res = res;
     }
 
+    /**
+     * List of item roots to initially set the top recyclerView with
+     * welcome data
+     * @return
+     */
     public   List<ItemRoot> getWelcomeList(){
         List<ItemRoot> rootList = new ArrayList<>();
         rootList.add(new ItemStart(R.drawable.welcome_image, res.getString(R.string.welcome_title),
@@ -26,6 +31,11 @@ public class GetStarterData {
         return rootList;
     }
 
+    /**
+     * List of item roots to initially set the bottom recyclerView
+     * with user guide information
+     * @return
+     */
     public    List<ItemRoot> getGuideData(){
         List<ItemRoot> rootList = new ArrayList<>();
         rootList.add(new ItemStart(R.drawable.nav_image,res.getString(R.string.guide_nav_title),res.getString(R.string.guide_nav_description)));

@@ -42,15 +42,38 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         super.onCreate();
     }
 
+    /**
+     * onBind that takes in the token and sets up the SpotifyPlayer,
+     * initializes variables needed for the player
+     * @param intent
+     * @return
+     */
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
+        initPlayerVariables(intent);
+        setUpSpotifyPlayer();
+
+        return spotifyBinder;
+    }
+
+    /**
+     * initializes the variables need by the player
+     * @param intent
+     */
+    private void initPlayerVariables(Intent intent){
         token = intent.getExtras().getString(MainActivity.KEY_SERVICE_TOKEN);
         playList = new ArrayList<>();
         curPlayList = new ArrayList<>();
         broadcaster = LocalBroadcastManager.getInstance(this);
         isSetQueue = false;
         isJump = false;
+    }
+
+    /**
+     * sets up the SpotifyPlayer using the token passed in the intent
+     */
+    private void setUpSpotifyPlayer() {
         Log.d(TAG_PLAYER_SERVICE, "This is the token in the Player Service " + token);
         Config playerConfig = new Config(this, token, MainActivity.CLIENT_ID);
         Spotify.getPlayer(playerConfig, this, new Player.InitializationObserver() {
@@ -72,8 +95,6 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
                 Log.d(TAG_PLAYER_SERVICE, "This is the player error " + throwable.getMessage());
             }
         });
-
-        return spotifyBinder;
     }
 
     @Override
@@ -81,12 +102,20 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         return super.onUnbind(intent);
     }
 
+    /**
+     * binder method that returns an instance of the Spotify Service
+     */
     public class SpotifyBinder extends Binder {
         public SpotifyPlayerService getService() {
             return SpotifyPlayerService.this;
         }
     }
 
+    /**
+     * Call back method for SpotifyPlayer when playback event occurs
+     * @param eventType
+     * @param playerState
+     */
     @Override
     public void onPlaybackEvent(EventType eventType, PlayerState playerState) {
         Log.d(TAG_PLAYER_SERVICE,"THIS IS THE PLAYBACK EVENT " + eventType +", PlayerState is " + playerState.toString());
@@ -108,23 +137,45 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         }
     }
 
+    /**
+     * call back method for SpotifyPlayer when error occurs
+     * @param errorType
+     * @param s
+     */
     @Override
     public void onPlaybackError(ErrorType errorType, String s) {
         Log.d(TAG_PLAYER_SERVICE, "errorType " + errorType + " String " + s);
     }
 
+    /**
+     * public method called in main activity onClickListener
+     * resumes already playing call
+     */
     public void playSong (){
         spotifyPlayer.resume();
     }
 
+    /**
+     * public method called in the main activity onClickListenr
+     * pauses song
+     */
     public void pauseSong(){
         spotifyPlayer.pause();
     }
 
+    /**
+     * public method called in the main activity onClickListenr
+     * skips song
+     */
     public void nextSong(){
         jumpTheQueue(trackCounter + 1);
     }
 
+    /**
+     * sets up a queue in the player when double tap occurs on the slider
+     * button
+     * @param items
+     */
     public void setQueue(List<Item> items){
         trackCounter = 0;
         isJump = true;
@@ -141,6 +192,10 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         isSetQueue = true;
     }
 
+    /**
+     * restarts the queue clicked position in the recycler view
+     * @param pos
+     */
     public void jumpTheQueue(int pos){
         trackCounter = pos;
         isJump = true;
@@ -158,6 +213,11 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
 
     }
 
+    /**
+     * method to send a message to the MainActivty when an event has occured
+     * to update the nowPlayingViews
+     * @param pos
+     */
     public void sendMessage(int pos){
         Log.d(TAG_PLAYER_SERVICE, "this is the pos of BROADCAST INTENT");
         Intent playerIntent = new Intent(BROADCAST_INTENT);
