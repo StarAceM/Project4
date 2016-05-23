@@ -30,6 +30,9 @@ public class SpotifyRetrofitService {
     private static OkHttpClient.Builder httpClient = new OkHttpClient.Builder();
     private static final HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
 
+    /**
+     * interface for searching Spotify API by Genre for tracks
+     */
     public interface GenreSearch {
         @GET("search")
         Observable<RootTrack> tracks (
@@ -39,6 +42,10 @@ public class SpotifyRetrofitService {
                 @Query("type") String type);
     }
 
+    /**
+     * public method to create the retrofit builder for the genre search
+     * @return
+     */
     public static GenreSearch createGenre(){
         // set desired log level
         logging.setLevel(Level.BODY);
@@ -54,12 +61,20 @@ public class SpotifyRetrofitService {
                 .create(SpotifyRetrofitService.GenreSearch.class);
     }
 
+    /**
+     * interface for searching Spotify API for features by ids
+     */
     public interface FeatureSearch{
         @GET("audio-features")
         Observable<AudioFeatures> features(
                 @Query("ids") String idString);
     }
 
+    /**
+     * public method to create the retrofit builder for feature search
+     * @param token
+     * @return
+     */
     public static FeatureSearch createFeature(String token){
         final String featureToken = token;
         if (featureToken != null) {

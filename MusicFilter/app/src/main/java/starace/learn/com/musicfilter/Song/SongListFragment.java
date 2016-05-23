@@ -12,6 +12,7 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -59,9 +60,13 @@ public class SongListFragment extends Fragment implements
     private List<String> genreListString;
 
 
-
-
-
+    /**
+     * inflates the fragment view
+     * @param inflater
+     * @param container
+     * @param savedInstanceState
+     * @return
+     */
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -69,6 +74,10 @@ public class SongListFragment extends Fragment implements
         return songFragmentView;
     }
 
+    /**
+     * initializes the fragment recycler view with initial data
+     * @param isFragment
+     */
     public void initSongRecyclerView(boolean isFragment) {
         songList = new ArrayList<>();
         setIsSearching = (SetIsSearching) getActivity();
@@ -88,6 +97,10 @@ public class SongListFragment extends Fragment implements
 
     }
 
+    /**
+     * returns the shared preferences for the user selected genres in the nav drawer
+     * @return
+     */
     private String getNavDrawerPreferences() {
 
         SharedPreferences sharedPreferences = getActivity().
@@ -96,15 +109,32 @@ public class SongListFragment extends Fragment implements
         return sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF, "");
     }
 
+    /**
+     * takes the input of temp and range as well as the genres from shared preferences.
+     * - makes an API call to return all the song items for each genre selected
+     * - compiles a list of ids returned from the first API call to make feature calls
+     * - feature calls are filtered for desired bpm
+     * - filtered feature list then filters the original list of song items
+     * - the filtered list of song items is returned
+     * @param tempo
+     * @param range
+     */
     public void getTrackData(final Float tempo, final Float range) {
         isNotSearching = false;
         setIsSearching.setIsSearchingMain(isNotSearching);
 
-        Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
-        String commaListGenre = setGenreString(getNavDrawerPreferences());
-
         Log.d(TAG_SONG_FRAG, "THIS IS THE TOKEN PASSED TO RETROFIT SERICE " + this.token);
         featureAPI = SpotifyRetrofitService.createFeature(this.token);
+
+        Log.d(TAG_SONG_FRAG, "THIS IS TEMP " + tempo + "THIS IS RANGE " + range);
+        String commaListGenre = setGenreString(getNavDrawerPreferences());
+        if(commaListGenre.equals("")) {
+            Toast.makeText(getActivity(),"No Genres Have Been Selected! Please Select and Try Again",Toast.LENGTH_LONG).show();
+            isNew = false;
+            songList.clear();
+            onGetTrackCompleted();
+            return;
+        }
 
         Observable<List<Item>> listGenre2 =
                 createStringObservable(commaListGenre).subscribeOn(Schedulers.newThread())
@@ -240,11 +270,20 @@ public class SongListFragment extends Fragment implements
                 });
     }
 
+    /**
+     * creates an observable from a string to be used in the genre search
+     * @param list
+     * @return
+     */
     private Observable<List<String>> createStringObservable(String list) {
         final List<String> genreList = Arrays.asList(list.split(","));
         return Observable.just(genreList);
     }
 
+    /**
+     * send a list of song items to the MainActivity and notifies the recylcerViewAdapter of
+     * data set change
+     */
     private void onGetTrackCompleted() {
 
         if (isNew) {
@@ -271,6 +310,11 @@ public class SongListFragment extends Fragment implements
         return itemList;
     }
 
+    /**
+     * Interface to receive tempo and range data from SliderButtonListener
+     * @param tempo
+     * @param range
+     */
     @Override
     public void updateAdapterOnDoubleTap(float tempo, float range) {
         if (!isNotSearching) {
@@ -279,11 +323,21 @@ public class SongListFragment extends Fragment implements
         }
     }
 
+    /**
+     * public method used to pass the token to the SongListFragment
+     * @param token
+     */
     public void setTokenFromMain(String token) {
         this.token = token;
         Log.d(TAG_SONG_FRAG, "THE TOKEN IS SET FROM MAIN IN THE FRAGMENT " + token);
     }
 
+    /**
+     * Corrects any formatting issues of genre names before they are used to make
+     * the API call to spotify
+     * @param rawGenre
+     * @return
+     */
     private String setGenreString(String rawGenre) {
         List<String> cleanGenreList = new ArrayList<>();
 
@@ -302,14 +356,25 @@ public class SongListFragment extends Fragment implements
         return TextUtils.join(",", cleanGenreList);
     }
 
+    /**
+     * interface to pass songs returned from the search to the main activity
+     * to update the SpotifyPlayerService
+     */
     public interface SetSongItemsToMain {
         void passSongItemsToMain(List<Item> listItem);
     }
 
+    /**
+     * interface to communicate with the MainActivity when searching starts and stops
+     */
     public interface SetIsSearching{
         void setIsSearchingMain(boolean isSearching);
     }
 
+    /**
+     * When fragment is initialized each genre from the resource string array is used
+     * to set up hashmaps used to searching Spotify API
+     */
     private void setUpOffsetMangerMaps() {
         offsetMap = new HashMap<>();
         offsetLimitMap = new HashMap<>();
@@ -326,6 +391,12 @@ public class SongListFragment extends Fragment implements
 
     }
 
+    /**
+     * uses the totals received from the API call to calculate a list of the correct
+     * API called for the Genre calls(limit 50 Max,correct offset values)
+     * @param genre
+     * @param total
+     */
     private void setUpOffsetList(String genre, int total) {
         List<Integer> offsetList = new ArrayList<>();
         List<Integer> limitList = new ArrayList<>();
@@ -363,8 +434,12 @@ public class SongListFragment extends Fragment implements
     }
 
 
+    /**
+     * API calls used to determine the total number of songs in each Genre requested
+     * setUpOffsetList is called from onCompleted
+     * @param genreList
+     */
     private void getSongTotalsGenre(final List<String> genreList){
-        //make api calls to get totals for all genres
 
         String commaListGenre = setGenreString(TextUtils.join(",",genreList));
 
