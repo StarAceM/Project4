@@ -12,7 +12,7 @@ import starace.learn.com.musicfilter.Spotify.Models.ItemStart;
 /**
  * Created by mstarace on 5/18/16.
  */
-public class GetStarterData {
+public class GetStarterData{
     private Resources res;
 
     public GetStarterData(Resources res) {

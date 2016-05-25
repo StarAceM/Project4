@@ -22,6 +22,14 @@
         <item>Latin</item>
     </string-array>
 
+    <string name="client_id">bb65fc78da534d8f801a5db0aaf6e422</string>
+    <string name="redirect_uri">music-filter-app-callback://callback</string>
+    <string name="key_shared_pref_notif">NotificationPref</string>
+    <string name="key_service_token">oAuthToken</string>
+    <string name="key_shared_pref_file">MainSharedPref</string>
+    <string name="key_slider_ratio">SliderRatio</string>
+    <string name="key_button_width">RootWidth</string>
+
     <string name="welcome_title">Welcome to BeatBot</string>
     <string name="welcome_description">If you are a first time user, check out the guide below</string>
 

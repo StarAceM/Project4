@@ -26,7 +26,6 @@ import rx.Subscriber;
 import rx.android.schedulers.AndroidSchedulers;
 import rx.functions.Func1;
 import rx.schedulers.Schedulers;
-import starace.learn.com.musicfilter.MainActivity;
 import starace.learn.com.musicfilter.R;
 import starace.learn.com.musicfilter.SliderButtonListener;
 import starace.learn.com.musicfilter.Spotify.Models.AudioFeatures;
@@ -80,7 +79,7 @@ public class SongListFragment extends Fragment implements
     public void initSongRecyclerView(boolean isFragment) {
         songList = new ArrayList<>();
         setIsSearching = (SetIsSearching) getActivity();
-        GetStarterData getData = new GetStarterData(this.getResources());
+        GetStarterData getData = new GetStarterData(getResources());
         if(isFragment){
             setUpOffsetMangerMaps();
             songList = getData.getWelcomeList();
@@ -103,9 +102,9 @@ public class SongListFragment extends Fragment implements
     private String getNavDrawerPreferences() {
 
         SharedPreferences sharedPreferences = getActivity().
-                getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+                getSharedPreferences(getResources().getString(R.string.key_shared_pref_file), Context.MODE_PRIVATE);
 
-        return sharedPreferences.getString(MainActivity.KEY_SHARED_PREF_NOTIF, "");
+        return sharedPreferences.getString(getResources().getString(R.string.key_shared_pref_file), "");
     }
 
     /**

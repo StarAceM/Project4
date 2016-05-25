@@ -89,9 +89,9 @@ public class SliderButtonListener extends View implements View.OnTouchListener{
                     this.curLeftMargin = endParams.leftMargin;
 
                     SharedPreferences sharedPreferences = context
-                            .getSharedPreferences(MainActivity.KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
-                    sharedPreferences.edit().putInt(MainActivity.KEY_SLIDER_RATIO, sliderBar.getProgress())
-                            .putInt(MainActivity.KEY_BUTTON_WIDTH, width)
+                            .getSharedPreferences(context.getString(R.string.key_shared_pref_file), Context.MODE_PRIVATE);
+                    sharedPreferences.edit().putInt(context.getString(R.string.key_slider_ratio), sliderBar.getProgress())
+                            .putInt(context.getString(R.string.key_button_width), width)
                             .apply();
 
                     Log.d(TAG_LISTENER, "THis is the progress bar position " + sliderBar.getProgress());

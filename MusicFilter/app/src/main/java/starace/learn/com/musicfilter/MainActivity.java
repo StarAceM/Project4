@@ -10,6 +10,7 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
+import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
@@ -54,27 +55,14 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         ConnectionStateCallback, SongListFragment.SetSongItemsToMain, SliderButtonListener.SetBPMRange,
         SliderButtonListener.SetBPMValue, SongListFragment.SetIsSearching{
 
-    private static final String TAG_MAIN = "MainActivity";
+    private static final String TAG_MAIN ="MainActivity";
     public static String token;
-    public static final String CLIENT_ID = "bb65fc78da534d8f801a5db0aaf6e422";
-    private static final String REDIRECT_URI = "music-filter-app-callback://callback";
-    private static final int REQUEST_CODE_SPOTIFY = 1337;
-    private static final int FAILED_LOGIN_CODE = 0;
-
-    public static final String KEY_SHARED_PREF_NOTIF = "NotificationPref";
-    public static final String KEY_SHAREDPREF_FILE = "MainSharedPref";
-    public static final String KEY_SLIDER_RATIO = "SliderRatio";
-    public static final int KEY_DEFAULT_INT = -1;
-    public static final String KEY_BUTTON_WIDTH = "RootWidth";
-    public static final int widthFixed = 400;
-    private static final int height = 150;
+    private Resources res;
     public int width;
     private int leftMargin;
     private String notificationPreferences;
     private SongListFragment songListFragment;
     private SliderButtonListener sliderButtonListener;
-
-    public static final String KEY_SERVICE_TOKEN = "oAuthToken";
     public boolean isBound;
     private boolean isConnected;
     private SpotifyPlayerService playerService;
@@ -96,6 +84,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        res = getResources();
 
         isConnected=checkNetworkConnection();
         initializeProgressBar();
@@ -112,9 +101,8 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         setSongListFragment();
 
         if(!isConnected){
-            buildAlertDialog(FAILED_LOGIN_CODE);
+            buildAlertDialog(res.getInteger(R.integer.failed_login_code));
         }
-
     }
 
     /**
@@ -175,19 +163,18 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
                 Log.d(TAG_MAIN,"SpotifyPlayerService has been received");
             }
         };
-
     }
 
     /**
      * starts the spotify sdk login process. the result is returned in onActivityResult
      */
     private void setUpSpotifyLogin(){
-        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(CLIENT_ID,
+        AuthenticationRequest.Builder builder = new AuthenticationRequest.Builder(res.getString(R.string.client_id),
                 AuthenticationResponse.Type.TOKEN,
-                REDIRECT_URI);
+                res.getString(R.string.redirect_uri));
         builder.setScopes(new String[]{"user-read-private", "streaming"});
         AuthenticationRequest request = builder.build();
-        AuthenticationClient.openLoginActivity(this, REQUEST_CODE_SPOTIFY, request);
+        AuthenticationClient.openLoginActivity(this, res.getInteger(R.integer.request_code_spotify), request);
 
     }
 
@@ -234,7 +221,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         Log.d(TAG_MAIN, "Logged in? " + token);
         songListFragment = new SongListFragment();
         Intent spotifyPlayerIntent = new Intent(this,SpotifyPlayerService.class);
-        spotifyPlayerIntent.putExtra(KEY_SERVICE_TOKEN,token);
+        spotifyPlayerIntent.putExtra(res.getString(R.string.key_service_token),token);
         this.bindService(spotifyPlayerIntent, spotifyServiceConnection, Context.BIND_AUTO_CREATE);
     }
 
@@ -309,12 +296,15 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
      */
     private void getSharedPreferencesSlider(){
 
-        SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
-        String notificationFromSharedPref = sharedPreferences.getString(KEY_SHARED_PREF_NOTIF, "");
+        SharedPreferences sharedPreferences = this.getSharedPreferences(res.getString(R.string.key_shared_pref_file),
+                Context.MODE_PRIVATE);
+        String notificationFromSharedPref = sharedPreferences.getString(res.getString(R.string.key_shared_pref_notif), "");
         setNavigationDrawer(createBoolArrayList(notificationFromSharedPref));
 
-        int sliderRatio = sharedPreferences.getInt(KEY_SLIDER_RATIO, KEY_DEFAULT_INT);
-        int buttonWidth = sharedPreferences.getInt(KEY_BUTTON_WIDTH, KEY_DEFAULT_INT);
+        int sliderRatio = sharedPreferences.getInt(res.getString(R.string.key_slider_ratio),
+                res.getInteger(R.integer.key_default_int));
+        int buttonWidth = sharedPreferences.getInt(res.getString(R.string.key_button_width),
+                res.getInteger(R.integer.key_default_int));
         setUpSlider(sliderRatio, buttonWidth);
 
     }
@@ -336,7 +326,8 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         width = setButtonWidth(size, buttonWidth, sliderRatio);
 
         Log.d(TAG_MAIN, "SIZE OF X " + size.x);
-        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width, height);
+        RelativeLayout.LayoutParams layoutParams = new RelativeLayout.LayoutParams(width,
+                res.getInteger(R.integer.height));
         layoutParams.addRule(RelativeLayout.CENTER_VERTICAL);
 
         if (sliderRatio == -1) {
@@ -430,7 +421,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
      * @param defaultInt
      * @return
      */
-    private static int setButtonWidth(Point size, int buttonWidth, int defaultInt){
+    private int setButtonWidth(Point size, int buttonWidth, int defaultInt){
         int newWidth;
         int portraitWidth;
 
@@ -441,7 +432,7 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         }
 
         if (defaultInt == -1) {
-            newWidth = widthFixed;
+            newWidth = res.getInteger(R.integer.fixed_width);
         } else {
             Double calcWidth = ((double) buttonWidth * size.x) / portraitWidth;
             newWidth = calcWidth.intValue();
@@ -508,9 +499,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
     @Override
     public void setNotificationPreferences(String notificationPreferences) {
         this.notificationPreferences = notificationPreferences;
-        SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = this.getSharedPreferences(res.getString(R.string.key_shared_pref_file),
+                Context.MODE_PRIVATE);
         sharedPreferences.edit()
-                .putString(KEY_SHARED_PREF_NOTIF,notificationPreferences)
+                .putString(res.getString(R.string.key_shared_pref_notif),notificationPreferences)
                 .apply();
 
         Log.i(TAG_MAIN, "setNotificationPreferences: " + notificationPreferences);
@@ -546,13 +538,14 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
 
 //        if (requestCode == REQUEST_CODE_SPOTIFY) {
             AuthenticationResponse response = AuthenticationClient.getResponse(resultCode, intent);
-        Log.d(TAG_MAIN,"Response token " + response.getAccessToken());
+        Log.d(TAG_MAIN, "Response token " + response.getAccessToken());
         Log.d(TAG_MAIN,"Response error " + response.getError());
             if (response.getType() == AuthenticationResponse.Type.TOKEN) {
 
-                SharedPreferences sharedPreferences = this.getSharedPreferences(KEY_SHAREDPREF_FILE, Context.MODE_PRIVATE);
+                SharedPreferences sharedPreferences = this.getSharedPreferences(res.getString(R.string.key_shared_pref_file),
+                        Context.MODE_PRIVATE);
                 SharedPreferences.Editor editor = sharedPreferences.edit();
-                editor.putString(KEY_SERVICE_TOKEN, response.getAccessToken());
+                editor.putString(res.getString(R.string.key_service_token), response.getAccessToken());
                 editor.apply();
                 token = response.getAccessToken();
                 songListFragment.setTokenFromMain(token);
@@ -707,9 +700,10 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
      */
     @Override
     protected void onDestroy() {
-        SharedPreferences sharedPreferences = MainActivity.this.getSharedPreferences(KEY_SHAREDPREF_FILE,Context.MODE_PRIVATE);
+        SharedPreferences sharedPreferences = MainActivity.this.getSharedPreferences(res.getString(R.string.key_shared_pref_file),
+                Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
-        editor.putString(KEY_SHARED_PREF_NOTIF, notificationPreferences);
+        editor.putString(res.getString(R.string.key_shared_pref_notif), notificationPreferences);
         editor.apply();
 
         if(isBound) {
@@ -717,7 +711,5 @@ public class MainActivity extends AppCompatActivity implements SongListAdapter.R
         }
         super.onDestroy();
     }
-
-
 }
 

@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import starace.learn.com.musicfilter.MainActivity;
+import starace.learn.com.musicfilter.R;
 import starace.learn.com.musicfilter.Spotify.Models.Item;
 
 /**
@@ -62,7 +63,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
      * @param intent
      */
     private void initPlayerVariables(Intent intent){
-        token = intent.getExtras().getString(MainActivity.KEY_SERVICE_TOKEN);
+        token = intent.getExtras().getString(getResources().getString(R.string.key_service_token));
         playList = new ArrayList<>();
         curPlayList = new ArrayList<>();
         broadcaster = LocalBroadcastManager.getInstance(this);
@@ -75,7 +76,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
      */
     private void setUpSpotifyPlayer() {
         Log.d(TAG_PLAYER_SERVICE, "This is the token in the Player Service " + token);
-        Config playerConfig = new Config(this, token, MainActivity.CLIENT_ID);
+        Config playerConfig = new Config(this, token, getResources().getString(R.string.client_id));
         Spotify.getPlayer(playerConfig, this, new Player.InitializationObserver() {
             @Override
             public void onInitialized(Player player) {

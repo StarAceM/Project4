@@ -1,28 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <integer-array name="genrePages">
-
-        <item>0</item>
-        <item>48</item>
-        <item>119</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-        <item>2</item>
-
-    </integer-array>
-
-
-
-
+    <integer name="request_code_spotify">1337</integer>
+    <integer name="failed_login_code">0</integer>
+    <integer name="key_default_int">-1</integer>
+    <integer name="fixed_width">400</integer>
+    <integer name="height">150</integer>
 
 </resources>
