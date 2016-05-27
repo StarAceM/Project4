@@ -37,6 +37,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     private boolean isSetQueue;
     private int trackCounter;
     private boolean isJump;
+    private int startCounter;
     private LocalBroadcastManager broadcaster;
 
     public void onCreate() {
@@ -69,6 +70,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
         broadcaster = LocalBroadcastManager.getInstance(this);
         isSetQueue = false;
         isJump = false;
+        startCounter = 0;
     }
 
     /**
@@ -127,12 +129,20 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
                 sendMessage(trackCounter);
                 isJump = false;
                 break;
-            case TRACK_CHANGED:
+            case TRACK_START:
                 Log.d(TAG_PLAYER_SERVICE, "Track_Changed handled Track Changed and isJump " + isJump);
-                if (!isJump){
-                    trackCounter +=1;
-                    sendMessage(trackCounter);
+
+                if (!isJump) {
+                    if (startCounter == 0) {
+                        startCounter = 1;
+                    } else {
+                        trackCounter += 1;
+                        sendMessage(trackCounter);
+                        startCounter = 0;
+                    }
                 }
+                break;
+
             default:
                 break;
         }
@@ -215,7 +225,7 @@ public class SpotifyPlayerService extends Service implements PlayerNotificationC
     }
 
     /**
-     * method to send a message to the MainActivty when an event has occured
+     * method to send a message to the MainActivity when an event has occured
      * to update the nowPlayingViews
      * @param pos
      */
