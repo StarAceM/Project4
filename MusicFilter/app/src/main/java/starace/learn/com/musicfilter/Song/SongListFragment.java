@@ -104,7 +104,7 @@ public class SongListFragment extends Fragment implements
         SharedPreferences sharedPreferences = getActivity().
                 getSharedPreferences(getResources().getString(R.string.key_shared_pref_file), Context.MODE_PRIVATE);
 
-        return sharedPreferences.getString(getResources().getString(R.string.key_shared_pref_file), "");
+        return sharedPreferences.getString(getResources().getString(R.string.key_shared_pref_notif), "");
     }
 
     /**
